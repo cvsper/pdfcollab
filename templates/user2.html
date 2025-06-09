@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}User 2 - Complete & Sign - PDF Collaborator{% endblock %}
+
+{% block content %}
+<!-- User 2 Interface - Matching React UserTwoInterface component -->
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-gray-900">User 2 - Complete & Sign</h2>
+        <a href="{{ url_for('dashboard') }}" 
+           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            Cancel
+        </a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="user2Form">
+        <!-- Document from User 1 -->
+        <div class="bg-white shadow sm:rounded-lg overflow-hidden">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Document from User 1</h3>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        User 2 Editing
+                    </span>
+                </div>
+
+                <!-- User 1 Data Review -->
+                {% if document.user1_data %}
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 class="text-sm font-medium text-gray-900 mb-2">Information from User 1:</h4>
+                    <div class="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div><strong>Name:</strong> {{ document.user1_data.name or 'Not provided' }}</div>
+                        <div><strong>Email:</strong> {{ document.user1_data.email or 'Not provided' }}</div>
+                        <div><strong>Department:</strong> {{ document.user1_data.department or 'Not provided' }}</div>
+                        <div><strong>Position:</strong> {{ document.user1_data.position or 'Not provided' }}</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- HR Information Section -->
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-md font-medium text-gray-900 mb-4">HR Information (User 2 Section)</h4>
+                        <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+                            <div>
+                                <label for="user2_name" class="block text-sm font-medium text-gray-700">HR Representative Name *</label>
+                                <input type="text" name="user2_name" id="user2_name" required
+                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="user2_email" class="block text-sm font-medium text-gray-700">HR Email *</label>
+                                <input type="email" name="user2_email" id="user2_email" required
+                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="manager" class="block text-sm font-medium text-gray-700">Manager Name</label>
+                                <input type="text" name="manager" id="manager"
+                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="hr_rep" class="block text-sm font-medium text-gray-700">Secondary HR Contact</label>
+                                <input type="text" name="hr_rep" id="hr_rep"
+                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                        </div>
+                        <div class="mt-4 grid grid-cols-1 gap-4">
+                            <div>
+                                <label for="benefits" class="block text-sm font-medium text-gray-700">Benefits Package</label>
+                                <textarea name="benefits" id="benefits" rows="3"
+                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                          placeholder="Health insurance, 401k, vacation days, etc."></textarea>
+                            </div>
+                            <div>
+                                <label for="notes" class="block text-sm font-medium text-gray-700">Additional Notes</label>
+                                <textarea name="notes" id="notes" rows="3"
+                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                          placeholder="Any additional information or conditions..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Digital Signature - Matching React SignatureField component -->
+                    <div>
+                        <h4 class="text-md font-medium text-gray-900 mb-2">Digital Signature *</h4>
+                        <div class="border border-gray-200 rounded-md p-4">
+                            <div id="signature-prompt" class="text-center">
+                                <p class="text-sm text-gray-500 mb-3">Please add your signature to continue</p>
+                                <button type="button" onclick="startSigning()" 
+                                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                                    Add Signature
+                                </button>
+                            </div>
+                            
+                            <div id="signature-area" class="hidden">
+                                <div class="flex justify-center space-x-4 mb-4">
+                                    <button type="button" onclick="setSignatureMethod('draw')" 
+                                            class="px-3 py-1 text-sm font-medium rounded-md" id="draw-btn">Draw</button>
+                                    <button type="button" onclick="setSignatureMethod('type')" 
+                                            class="px-3 py-1 text-sm font-medium rounded-md" id="type-btn">Type</button>
+                                </div>
+                                
+                                <div id="draw-signature" class="border border-gray-300 rounded-md bg-white">
+                                    <canvas id="signature-canvas" width="400" height="150" class="w-full touch-none"></canvas>
+                                </div>
+                                
+                                <div id="type-signature" class="hidden">
+                                    <input type="text" id="typed-signature" placeholder="Type your signature"
+                                           class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <div class="mt-2 p-3 border border-gray-200 rounded-md bg-white min-h-[80px] flex items-center justify-center">
+                                        <span class="font-signature text-xl" id="signature-preview"></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4 flex justify-between">
+                                    <button type="button" onclick="cancelSignature()"
+                                            class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                        Cancel
+                                    </button>
+                                    <div class="space-x-2">
+                                        <button type="button" onclick="clearSignature()" id="clear-btn"
+                                                class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                            Clear
+                                        </button>
+                                        <button type="button" onclick="saveSignature()"
+                                                class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                                            Save Signature
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="signature-complete" class="flex justify-between items-center hidden">
+                                <div class="flex items-center">
+                                    <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="ml-2 text-sm text-gray-700">Signature added</span>
+                                </div>
+                                <button type="button" onclick="changeSignature()"
+                                        class="text-sm text-blue-600 hover:text-blue-500">Change</button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="signature" id="signature-data" required>
+                    </div>
+
+                    <!-- Supporting Documents - Matching React FileUpload for supporting docs -->
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="text-md font-medium text-gray-900">Supporting Documents</h4>
+                            <button type="button" onclick="toggleUploadPanel()"
+                                    class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200">
+                                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Add Document
+                            </button>
+                        </div>
+                        
+                        <div id="upload-panel" class="hidden mt-2 p-4 border border-gray-200 rounded-md">
+                            <h5 class="text-sm font-medium text-gray-700 mb-2">Upload Supporting Document</h5>
+                            <div class="flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6">
+                                <div class="space-y-1 text-center">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <div class="flex text-sm text-gray-600">
+                                        <label for="supporting_docs" class="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 hover:text-blue-500">
+                                            <span>Upload files</span>
+                                            <input id="supporting_docs" name="supporting_docs" type="file" multiple class="sr-only" onchange="handleSupportingDocs(this)">
+                                        </label>
+                                        <p class="pl-1">or drag and drop</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500">PDF, DOC, PNG, JPG up to 10MB each</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="supporting-docs-list" class="mt-3"></div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <a href="{{ url_for('dashboard') }}" 
+                           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Cancel
+                        </a>
+                        <button type="submit" id="submit-btn" disabled
+                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-300 cursor-not-allowed">
+                            Submit & Finalize
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+let canvas, ctx, isDrawing = false;
+let signatureMethod = 'draw';
+let signatureComplete = false;
+let supportingFiles = [];
+
+// Initialize signature canvas
+function initCanvas() {
+    canvas = document.getElementById('signature-canvas');
+    ctx = canvas.getContext('2d');
+    
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+}
+
+function startSigning() {
+    document.getElementById('signature-prompt').classList.add('hidden');
+    document.getElementById('signature-area').classList.remove('hidden');
+    initCanvas();
+    setSignatureMethod('draw');
+}
+
+function setSignatureMethod(method) {
+    signatureMethod = method;
+    
+    // Update button styles
+    const drawBtn = document.getElementById('draw-btn');
+    const typeBtn = document.getElementById('type-btn');
+    
+    if (method === 'draw') {
+        drawBtn.className = 'px-3 py-1 text-sm font-medium rounded-md bg-blue-100 text-blue-700';
+        typeBtn.className = 'px-3 py-1 text-sm font-medium rounded-md bg-gray-100 text-gray-700';
+        document.getElementById('draw-signature').classList.remove('hidden');
+        document.getElementById('type-signature').classList.add('hidden');
+        document.getElementById('clear-btn').classList.remove('hidden');
+    } else {
+        typeBtn.className = 'px-3 py-1 text-sm font-medium rounded-md bg-blue-100 text-blue-700';
+        drawBtn.className = 'px-3 py-1 text-sm font-medium rounded-md bg-gray-100 text-gray-700';
+        document.getElementById('type-signature').classList.remove('hidden');
+        document.getElementById('draw-signature').classList.add('hidden');
+        document.getElementById('clear-btn').classList.add('hidden');
+    }
+}
+
+function startDrawing(e) {
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    e.preventDefault();
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    e.preventDefault();
+}
+
+function stopDrawing() {
+    isDrawing = false;
+}
+
+function clearSignature() {
+    if (signatureMethod === 'draw') {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    } else {
+        document.getElementById('typed-signature').value = '';
+        document.getElementById('signature-preview').textContent = '';
+    }
+}
+
+function saveSignature() {
+    let signatureData = '';
+    
+    if (signatureMethod === 'draw') {
+        signatureData = canvas.toDataURL();
+    } else {
+        const typedSig = document.getElementById('typed-signature').value.trim();
+        if (!typedSig) {
+            alert('Please enter your signature');
+            return;
+        }
+        signatureData = 'typed:' + typedSig;
+    }
+    
+    document.getElementById('signature-data').value = signatureData;
+    document.getElementById('signature-area').classList.add('hidden');
+    document.getElementById('signature-complete').classList.remove('hidden');
+    
+    signatureComplete = true;
+    updateSubmitButton();
+}
+
+function cancelSignature() {
+    document.getElementById('signature-area').classList.add('hidden');
+    document.getElementById('signature-prompt').classList.remove('hidden');
+    clearSignature();
+}
+
+function changeSignature() {
+    document.getElementById('signature-complete').classList.add('hidden');
+    document.getElementById('signature-area').classList.remove('hidden');
+    signatureComplete = false;
+    updateSubmitButton();
+}
+
+function updateSubmitButton() {
+    const submitBtn = document.getElementById('submit-btn');
+    if (signatureComplete) {
+        submitBtn.disabled = false;
+        submitBtn.className = 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700';
+    } else {
+        submitBtn.disabled = true;
+        submitBtn.className = 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-300 cursor-not-allowed';
+    }
+}
+
+function toggleUploadPanel() {
+    const panel = document.getElementById('upload-panel');
+    panel.classList.toggle('hidden');
+}
+
+function handleSupportingDocs(input) {
+    const files = Array.from(input.files);
+    supportingFiles = supportingFiles.concat(files);
+    updateSupportingDocsList();
+}
+
+function updateSupportingDocsList() {
+    const listContainer = document.getElementById('supporting-docs-list');
+    
+    if (supportingFiles.length === 0) {
+        listContainer.innerHTML = '';
+        return;
+    }
+    
+    let html = '<ul class="divide-y divide-gray-200 border border-gray-200 rounded-md">';
+    supportingFiles.forEach((file, index) => {
+        html += `
+            <li class="px-3 py-3 flex items-center justify-between text-sm">
+                <div class="flex items-center">
+                    <svg class="flex-shrink-0 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="ml-2 flex-1 w-0 truncate">${file.name}</span>
+                </div>
+                <button type="button" onclick="removeSupportingDoc(${index})" class="font-medium text-red-600 hover:text-red-500">Remove</button>
+            </li>
+        `;
+    });
+    html += '</ul>';
+    
+    listContainer.innerHTML = html;
+}
+
+function removeSupportingDoc(index) {
+    supportingFiles.splice(index, 1);
+    updateSupportingDocsList();
+}
+
+// Typed signature preview
+document.getElementById('typed-signature').addEventListener('input', function(e) {
+    document.getElementById('signature-preview').textContent = e.target.value;
+});
+
+// Form submission
+document.getElementById('user2Form').addEventListener('submit', function(e) {
+    if (!signatureComplete) {
+        e.preventDefault();
+        alert('Please add your signature before submitting.');
+        return false;
+    }
+});
+</script>
+{% endblock %}

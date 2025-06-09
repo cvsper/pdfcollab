@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+
+{% block title %}User 1 - Upload & Edit PDF - PDF Collaborator{% endblock %}
+
+{% block content %}
+<!-- Enhanced User 1 Interface with Real PDF Field Editing -->
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-gray-900">User 1 - Upload & Edit PDF Fields</h2>
+        <a href="{{ url_for('dashboard') }}" 
+           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            Cancel
+        </a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="user1Form">
+        <!-- File Upload Section -->
+        <div class="bg-white shadow sm:rounded-lg overflow-hidden">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Upload PDF Document</h3>
+                <div class="mt-2 max-w-xl text-sm text-gray-500">
+                    <p>Upload your PDF document. We'll extract the form fields automatically and let you assign which fields User 2 should complete.</p>
+                </div>
+                <div class="mt-5">
+                    <div id="file-drop-area" 
+                         class="flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6 hover:border-blue-400 transition-colors cursor-pointer"
+                         onclick="document.getElementById('pdf_file').click()">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <div class="flex text-sm text-gray-600">
+                                <span class="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 hover:text-blue-500">Upload a PDF</span>
+                                <p class="pl-1">or drag and drop</p>
+                            </div>
+                            <p class="text-xs text-gray-500">PDF up to 10MB</p>
+                        </div>
+                        <input id="pdf_file" name="pdf_file" type="file" accept=".pdf" class="sr-only" required onchange="handleFileSelect(this)">
+                    </div>
+                    <div id="file-preview" class="mt-4 hidden">
+                        <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <div class="flex items-center">
+                                <svg class="h-8 w-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                </svg>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-900" id="file-name"></p>
+                                    <p class="text-sm text-gray-500" id="file-size"></p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="clearFile()" class="text-gray-400 hover:text-gray-600">
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PDF Field Editor - Shows after upload -->
+        <div id="pdf-editor" class="bg-white shadow sm:rounded-lg overflow-hidden hidden">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Edit PDF Fields & Assign to Users</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-blue-100 border-2 border-blue-500 rounded mr-2"></div>
+                            <span class="text-sm text-gray-600">Your fields</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-orange-100 border-2 border-orange-500 rounded mr-2"></div>
+                            <span class="text-sm text-gray-600">User 2 fields</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PDF Preview and Field List -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- PDF Preview -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-gray-900">PDF Preview</h4>
+                        <div class="border-2 border-gray-200 rounded-lg bg-gray-50 p-4 min-h-[500px] flex items-center justify-center">
+                            <div id="pdf-preview-container" class="text-center">
+                                <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                </svg>
+                                <p class="text-gray-500">PDF preview will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Field List and Assignment -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-gray-900">Detected PDF Fields</h4>
+                        <div id="loading-fields" class="text-center py-8">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            <p class="mt-2 text-gray-500">Analyzing PDF fields...</p>
+                        </div>
+                        
+                        <div id="pdf-fields-list" class="space-y-3 hidden">
+                            <!-- Fields will be populated here via JavaScript -->
+                        </div>
+                        
+                        <!-- Manual Field Addition -->
+                        <div id="manual-field-section" class="mt-6 p-4 border-2 border-dashed border-gray-300 rounded-lg hidden">
+                            <h5 class="font-medium text-gray-900 mb-3">Add Custom Field</h5>
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                <input type="text" id="custom-field-name" placeholder="Field name (e.g., 'Employee ID')"
+                                       class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <select id="custom-field-type" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="text">Text</option>
+                                    <option value="email">Email</option>
+                                    <option value="tel">Phone</option>
+                                    <option value="date">Date</option>
+                                    <option value="textarea">Textarea</option>
+                                    <option value="signature">Signature</option>
+                                </select>
+                                <select id="custom-field-user" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="user1">My Field</option>
+                                    <option value="user2">User 2 Field</option>
+                                </select>
+                            </div>
+                            <div class="mt-3 flex justify-between">
+                                <button type="button" onclick="cancelCustomField()" 
+                                        class="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+                                <button type="button" onclick="addCustomField()" 
+                                        class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                                    Add Field
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Add Field Button -->
+                        <div class="mt-4 text-center">
+                            <button type="button" onclick="showCustomFieldForm()" 
+                                    class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Add Custom Field
+                            </button>
+                        </div>
+                        
+                        <div id="no-fields" class="text-center py-8 hidden">
+                            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <p class="text-gray-500">No editable fields detected in this PDF</p>
+                            <p class="text-sm text-gray-400 mt-1">You can still proceed with the workflow</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Information Section -->
+                <div class="mt-8 border-t pt-6">
+                    <h4 class="text-md font-medium text-gray-900 mb-4">Your Information</h4>
+                    <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+                        <div>
+                            <label for="user1_name" class="block text-sm font-medium text-gray-700">Full Name *</label>
+                            <input type="text" name="user1_name" id="user1_name" required
+                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="user1_email" class="block text-sm font-medium text-gray-700">Email Address *</label>
+                            <input type="email" name="user1_email" id="user1_email" required
+                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-8 flex justify-end space-x-3">
+                    <a href="{{ url_for('dashboard') }}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Cancel
+                    </a>
+                    <button type="submit" id="submit-btn"
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                        </svg>
+                        Submit to User 2
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+let currentDocumentId = null;
+let pdfFields = [];
+
+// File upload handling
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (file) {
+        // Show file preview
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('file-size').textContent = formatFileSize(file.size);
+        document.getElementById('file-preview').classList.remove('hidden');
+        
+        // Show PDF editor section
+        document.getElementById('pdf-editor').classList.remove('hidden');
+        
+        // Simulate PDF upload and field extraction
+        setTimeout(() => {
+            loadPDFFields();
+        }, 1000);
+        
+        // Scroll to editor
+        document.getElementById('pdf-editor').scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function loadPDFFields() {
+    const fileInput = document.getElementById('pdf_file');
+    if (!fileInput.files[0]) {
+        showErrorMessage('No PDF file selected');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('pdf_file', fileInput.files[0]);
+    
+    // Make API call to extract PDF fields
+    fetch('/api/extract-fields', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide loading
+        document.getElementById('loading-fields').classList.add('hidden');
+        
+        if (data.error) {
+            showErrorMessage('Error extracting PDF fields: ' + data.error);
+            // Show fallback message
+            document.getElementById('no-fields').classList.remove('hidden');
+            return;
+        }
+        
+        if (data.fields && data.fields.length > 0) {
+            pdfFields = data.fields;
+            console.log('📋 Loaded PDF fields:', pdfFields.length);
+            pdfFields.forEach((field, index) => {
+                console.log(`   ${index + 1}. ${field.name} (${field.id}) → ${field.assigned_to} [${field.value || 'empty'}]`);
+            });
+            document.getElementById('pdf-fields-list').classList.remove('hidden');
+            renderPDFFields();
+            showNotification(`Successfully detected ${data.fields.length} fields from your PDF!`, 'success');
+        } else {
+            // No fields found
+            document.getElementById('no-fields').classList.remove('hidden');
+            showNotification('No form fields detected in this PDF. You can add custom fields manually.', 'info');
+        }
+    })
+    .catch(error => {
+        console.error('Error extracting PDF fields:', error);
+        document.getElementById('loading-fields').classList.add('hidden');
+        document.getElementById('no-fields').classList.remove('hidden');
+        showErrorMessage('Failed to analyze PDF. You can add custom fields manually.');
+    });
+}
+
+function showErrorMessage(message) {
+    showNotification(message, 'error');
+}
+
+function renderPDFFields() {
+    const container = document.getElementById('pdf-fields-list');
+    container.innerHTML = '';
+    
+    pdfFields.forEach(field => {
+        const fieldElement = createFieldElement(field);
+        container.appendChild(fieldElement);
+    });
+}
+
+function createFieldElement(field) {
+    const div = document.createElement('div');
+    div.className = `p-4 border rounded-lg ${field.assigned_to === 'user1' ? 'border-blue-300 bg-blue-50' : 'border-orange-300 bg-orange-50'}`;
+    
+    div.innerHTML = `
+        <div class="flex justify-between items-start">
+            <div class="flex-1">
+                <h5 class="font-medium text-gray-900">${field.name}</h5>
+                <p class="text-sm text-gray-600 capitalize">${field.type} field</p>
+                ${field.assigned_to === 'user1' ? `
+                    <input type="text" 
+                           class="mt-2 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Enter value..."
+                           value="${field.value || ''}"
+                           onchange="updateFieldValue('${field.id}', this.value)"
+                           onkeyup="updateFieldValue('${field.id}', this.value)"
+                           onblur="updateFieldValue('${field.id}', this.value)">
+                ` : `
+                    <p class="text-sm text-orange-600 mt-1">📝 Assigned to User 2</p>
+                `}
+            </div>
+            <div class="ml-4">
+                <select onchange="reassignField('${field.id}', this.value)" 
+                        class="text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <option value="user1" ${field.assigned_to === 'user1' ? 'selected' : ''}>My Field</option>
+                    <option value="user2" ${field.assigned_to === 'user2' ? 'selected' : ''}>User 2 Field</option>
+                </select>
+            </div>
+        </div>
+    `;
+    
+    return div;
+}
+
+function reassignField(fieldId, newAssignment) {
+    // Update field assignment
+    const field = pdfFields.find(f => f.id === fieldId);
+    if (field) {
+        field.assigned_to = newAssignment;
+        renderPDFFields();
+        
+        // Show feedback
+        showNotification(`Field "${field.name}" assigned to ${newAssignment === 'user1' ? 'you' : 'User 2'}`, 'success');
+    }
+}
+
+function updateFieldValue(fieldId, value) {
+    console.log(`🔄 updateFieldValue called: ${fieldId} = '${value}'`);
+    const field = pdfFields.find(f => f.id === fieldId);
+    if (field) {
+        const oldValue = field.value;
+        field.value = value;
+        console.log(`   ✅ Updated '${field.name}': '${oldValue}' → '${value}'`);
+    } else {
+        console.log(`   ❌ Field not found: ${fieldId}`);
+    }
+}
+
+function showCustomFieldForm() {
+    document.getElementById('manual-field-section').classList.remove('hidden');
+}
+
+function cancelCustomField() {
+    document.getElementById('manual-field-section').classList.add('hidden');
+    document.getElementById('custom-field-name').value = '';
+    document.getElementById('custom-field-type').value = 'text';
+    document.getElementById('custom-field-user').value = 'user1';
+}
+
+function addCustomField() {
+    const name = document.getElementById('custom-field-name').value.trim();
+    const type = document.getElementById('custom-field-type').value;
+    const assignedTo = document.getElementById('custom-field-user').value;
+    
+    if (!name) {
+        alert('Please enter a field name');
+        return;
+    }
+    
+    // Create new field
+    const newField = {
+        id: `custom_${Date.now()}`,
+        name: name,
+        type: type,
+        value: '',
+        assigned_to: assignedTo,
+        page: 0,
+        source: 'manual',
+        position: {
+            x: 100 + (pdfFields.length % 2) * 250,
+            y: 700 - Math.floor(pdfFields.length / 2) * 60,
+            width: 200,
+            height: type === 'textarea' ? 60 : 30
+        }
+    };
+    
+    // Add to fields array
+    pdfFields.push(newField);
+    
+    // Re-render fields
+    renderPDFFields();
+    
+    // Clear form and hide
+    cancelCustomField();
+    
+    // Show success message
+    showNotification(`Field "${name}" added successfully`, 'success');
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg ${type === 'success' ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'}`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                ${type === 'success' ? 
+                    '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>' :
+                    '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>'
+                }
+            </svg>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+function clearFile() {
+    document.getElementById('pdf_file').value = '';
+    document.getElementById('file-preview').classList.add('hidden');
+    document.getElementById('pdf-editor').classList.add('hidden');
+    pdfFields = [];
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Form submission
+document.getElementById('user1Form').addEventListener('submit', function(e) {
+    // Debug: Log what we're submitting
+    console.log('🚀 User 1 form submission triggered');
+    console.log('📊 pdfFields array:', pdfFields);
+    console.log('📋 Fields count:', pdfFields.length);
+    
+    // Show field values being submitted
+    const fieldsWithValues = pdfFields.filter(f => f.value);
+    const fieldsWithoutValues = pdfFields.filter(f => !f.value);
+    
+    console.log('✅ Fields WITH values:', fieldsWithValues.length);
+    fieldsWithValues.forEach(field => {
+        console.log(`   - ${field.name}: '${field.value}' → ${field.assigned_to}`);
+    });
+    
+    console.log('⭕ Fields WITHOUT values:', fieldsWithoutValues.length);
+    fieldsWithoutValues.forEach(field => {
+        console.log(`   - ${field.name}: (empty) → ${field.assigned_to}`);
+    });
+    
+    // Add field data to form
+    const fieldData = document.createElement('input');
+    fieldData.type = 'hidden';
+    fieldData.name = 'pdf_fields';
+    fieldData.value = JSON.stringify(pdfFields);
+    this.appendChild(fieldData);
+    
+    console.log('📤 Field data JSON length:', fieldData.value.length);
+    console.log('📤 Field data preview:', fieldData.value.substring(0, 200) + '...');
+});
+
+// Drag and drop functionality
+const dropArea = document.getElementById('file-drop-area');
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropArea.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropArea.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropArea.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight() {
+    dropArea.classList.add('border-blue-400', 'bg-blue-50');
+}
+
+function unhighlight() {
+    dropArea.classList.remove('border-blue-400', 'bg-blue-50');
+}
+
+dropArea.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+        document.getElementById('pdf_file').files = files;
+        handleFileSelect(document.getElementById('pdf_file'));
+    }
+}
+</script>
+{% endblock %}

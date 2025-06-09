@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Document Completed - PDF Collaborator{% endblock %}
+
+{% block content %}
+<!-- Completion Page - Matching React CompletionPage component -->
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6 text-center">
+            <!-- Success Icon -->
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            
+            <!-- Success Message -->
+            <h3 class="mt-3 text-lg font-medium text-gray-900">Document signed and completed!</h3>
+            <div class="mt-2 text-sm text-gray-500">
+                <p>The completed PDF has been automatically emailed to both users.</p>
+            </div>
+            
+            <!-- Document Details -->
+            <div class="mt-8 p-4 bg-gray-50 rounded-md">
+                <h4 class="text-sm font-medium text-gray-900">Document Details</h4>
+                <dl class="mt-2 text-sm text-left">
+                    <div class="flex justify-between py-1">
+                        <dt class="text-gray-500">Document Name:</dt>
+                        <dd class="text-gray-900">{{ document.name }}</dd>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <dt class="text-gray-500">Completed Date:</dt>
+                        <dd class="text-gray-900">
+                            {% if document.completed_at %}
+                                Today
+                            {% else %}
+                                Today
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <dt class="text-gray-500">Participants:</dt>
+                        <dd class="text-gray-900">
+                            {% if document.user1_data and document.user2_data %}
+                                {{ document.user1_data.name or 'User 1' }}, {{ document.user2_data.name or 'User 2' }}
+                            {% else %}
+                                User 1, User 2
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <dt class="text-gray-500">Supporting Documents:</dt>
+                        <dd class="text-gray-900">
+                            {% if document.supporting_docs %}
+                                {{ document.supporting_docs|length }} files
+                            {% else %}
+                                0 files
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <dt class="text-gray-500">Status:</dt>
+                        <dd class="text-gray-900">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                Signed & Sent
+                            </span>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <!-- Participants Summary -->
+            {% if document.user1_data or document.user2_data %}
+            <div class="mt-6 p-4 bg-blue-50 rounded-md">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Participant Summary</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-left">
+                    {% if document.user1_data %}
+                    <div class="bg-white p-3 rounded border">
+                        <h5 class="font-medium text-gray-900 mb-2">User 1 (Employee)</h5>
+                        <div class="space-y-1 text-gray-600">
+                            <div><strong>Name:</strong> {{ document.user1_data.name or 'Not provided' }}</div>
+                            <div><strong>Email:</strong> {{ document.user1_data.email or 'Not provided' }}</div>
+                            {% if document.user1_data.department %}
+                            <div><strong>Department:</strong> {{ document.user1_data.department }}</div>
+                            {% endif %}
+                            {% if document.user1_data.position %}
+                            <div><strong>Position:</strong> {{ document.user1_data.position }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if document.user2_data %}
+                    <div class="bg-white p-3 rounded border">
+                        <h5 class="font-medium text-gray-900 mb-2">User 2 (HR Representative)</h5>
+                        <div class="space-y-1 text-gray-600">
+                            <div><strong>Name:</strong> {{ document.user2_data.name or 'Not provided' }}</div>
+                            <div><strong>Email:</strong> {{ document.user2_data.email or 'Not provided' }}</div>
+                            <div class="flex items-center">
+                                <strong>Signature:</strong>
+                                <svg class="w-4 h-4 text-green-500 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-green-600 ml-1">Signed</span>
+                            </div>
+                            {% if document.user2_data.date_signed %}
+                            <div><strong>Signed:</strong> Recently</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Supporting Documents -->
+            {% if document.supporting_docs and document.supporting_docs|length > 0 %}
+            <div class="mt-6 p-4 bg-yellow-50 rounded-md">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Supporting Documents</h4>
+                <ul class="text-sm text-left space-y-2">
+                    {% for doc in document.supporting_docs %}
+                    <li class="flex items-center justify-between p-2 bg-white rounded border">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-gray-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>{{ doc.filename }}</span>
+                        </div>
+                        <button onclick="downloadSupportingDoc('{{ doc.filename }}')" 
+                                class="text-blue-600 hover:text-blue-500 text-xs">
+                            Download
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Email Confirmation -->
+            <div class="mt-6 p-4 bg-green-50 border border-green-200 rounded-md">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm">
+                        <p class="font-medium text-green-800">Email notifications sent successfully!</p>
+                        <p class="text-green-600 mt-1">
+                            Confirmation emails with the completed document have been sent to:
+                            {% if document.user1_data and document.user1_data.email %}{{ document.user1_data.email }}{% endif %}
+                            {% if document.user1_data and document.user1_data.email and document.user2_data and document.user2_data.email %} and {% endif %}
+                            {% if document.user2_data and document.user2_data.email %}{{ document.user2_data.email }}{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="mt-5 sm:mt-6 flex justify-center space-x-3">
+                <button type="button" onclick="downloadDocument()" 
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                    <svg class="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Download PDF
+                </button>
+                <a href="{{ url_for('dashboard') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Return to Dashboard
+                </a>
+            </div>
+            
+            <!-- Additional Actions -->
+            <div class="mt-4 flex justify-center space-x-6 text-sm">
+                <button onclick="printSummary()" class="text-blue-600 hover:text-blue-500">
+                    <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd"/>
+                    </svg>
+                    Print Summary
+                </button>
+                <button onclick="shareDocument()" class="text-blue-600 hover:text-blue-500">
+                    <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+                    </svg>
+                    Share Link
+                </button>
+                <a href="{{ url_for('start_workflow') }}" class="text-green-600 hover:text-green-500">
+                    <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                    </svg>
+                    Start New Workflow
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadDocument() {
+    // Download the completed PDF with all field values filled
+    const link = document.createElement('a');
+    link.href = "{{ url_for('download_document', document_id=document.id) }}";
+    link.download = "completed_{{ document.name }}";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function downloadSupportingDoc(filename) {
+    alert('Download ' + filename + ' - functionality would be implemented to download supporting documents');
+}
+
+function printSummary() {
+    window.print();
+}
+
+function shareDocument() {
+    const url = window.location.href;
+    if (navigator.share) {
+        navigator.share({
+            title: 'Document Completion Summary',
+            text: 'PDF collaboration document has been completed',
+            url: url
+        });
+    } else {
+        // Fallback for browsers that don't support Web Share API
+        navigator.clipboard.writeText(url).then(() => {
+            alert('Document link copied to clipboard!');
+        }).catch(() => {
+            prompt('Copy this link to share:', url);
+        });
+    }
+}
+
+// Auto-scroll to top and add celebration animation
+document.addEventListener('DOMContentLoaded', function() {
+    window.scrollTo(0, 0);
+    
+    // Add a subtle celebration animation
+    const successIcon = document.querySelector('.bg-green-100');
+    if (successIcon) {
+        successIcon.style.animation = 'bounce 1s infinite';
+    }
+});
+
+// Add CSS animation for success icon
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes bounce {
+        0%, 20%, 53%, 80%, 100% {
+            transform: translate3d(0,0,0);
+        }
+        40%, 43% {
+            transform: translate3d(0, -10px, 0);
+        }
+        70% {
+            transform: translate3d(0, -5px, 0);
+        }
+        90% {
+            transform: translate3d(0, -2px, 0);
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PDF Collaborator{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom signature font */
+        .font-signature {
+            font-family: 'Brush Script MT', cursive;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen bg-gray-50">
+    <!-- Navigation Header - Matching React Navigation component -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">PDF Collaborator</h1>
+                </div>
+                <!-- User profile placeholder -->
+                <div class="flex items-center">
+                    <span class="bg-gray-200 rounded-full h-8 w-8 flex items-center justify-center">
+                        <span class="text-gray-600 font-bold">U</span>
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Workflow steps - Matching React progress navigation -->
+            <nav aria-label="Progress" class="py-4">
+                <ol class="flex items-center justify-between w-full">
+                    {% set current_step = request.endpoint %}
+                    {% set steps = [
+                        {'name': 'Dashboard', 'description': 'View and manage documents', 'endpoint': 'dashboard'},
+                        {'name': 'User 1', 'description': 'Upload and begin form', 'endpoint': 'user1_interface'}, 
+                        {'name': 'User 2', 'description': 'Complete and sign', 'endpoint': 'user2_interface'},
+                        {'name': 'Complete', 'description': 'Document finalized', 'endpoint': 'completion_page'}
+                    ] %}
+                    
+                    {% for step in steps %}
+                    {% set loop_index = loop.index0 %}
+                    {% set is_active = current_step == step.endpoint %}
+                    {% set is_completed = loop_index < (0 if current_step == 'dashboard' else 1 if current_step == 'user1_interface' else 2 if current_step == 'user2_interface' else 3) %}
+                    {% set is_clickable = loop_index == 0 or is_completed %}
+                    
+                    <li class="relative {% if loop_index != steps|length - 1 %}pr-8 sm:pr-20{% endif %} {% if loop_index != 0 %}pl-8 sm:pl-20{% endif %}">
+                        {% if loop_index != 0 %}
+                        <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                            <div class="h-0.5 w-full {% if is_completed %}bg-blue-600{% else %}bg-gray-200{% endif %}"></div>
+                        </div>
+                        {% endif %}
+                        
+                        <button onclick="{% if is_clickable and step.endpoint in ['dashboard', 'user1_interface'] %}window.location.href='{{ url_for(step.endpoint) }}'{% endif %}"
+                                class="relative flex items-center justify-center {% if is_clickable and step.endpoint in ['dashboard', 'user1_interface'] %}cursor-pointer{% else %}cursor-default{% endif %}"
+                                {% if not (is_clickable and step.endpoint in ['dashboard', 'user1_interface']) %}disabled{% endif %}>
+                            <span class="h-9 flex items-center">
+                                <span class="relative z-10 w-8 h-8 flex items-center justify-center rounded-full 
+                                           {% if is_active %}bg-white border-2 border-blue-600
+                                           {% elif is_completed %}bg-blue-600
+                                           {% else %}bg-gray-200{% endif %}">
+                                    {% if is_completed %}
+                                    <svg class="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    {% else %}
+                                    <span class="text-sm {% if is_active %}text-blue-600{% else %}text-gray-500{% endif %}">{{ loop_index + 1 }}</span>
+                                    {% endif %}
+                                </span>
+                            </span>
+                            <span class="hidden sm:block ml-2 text-sm font-medium text-gray-900">{{ step.name }}</span>
+                        </button>
+                        <span class="hidden sm:block text-sm text-gray-500">{{ step.description }}</span>
+                    </li>
+                    {% endfor %}
+                </ol>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            {% for category, message in messages %}
+            <div class="mb-4 p-4 rounded-md {% if category == 'error' %}bg-red-50 border border-red-200{% else %}bg-green-50 border border-green-200{% endif %}">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        {% if category == 'error' %}
+                        <i class="fas fa-exclamation-triangle text-red-400"></i>
+                        {% else %}
+                        <i class="fas fa-check-circle text-green-400"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm {% if category == 'error' %}text-red-800{% else %}text-green-800{% endif %}">{{ message }}</p>
+                    </div>
+                    <div class="ml-auto pl-3">
+                        <div class="-mx-1.5 -my-1.5">
+                            <button onclick="this.parentElement.parentElement.parentElement.parentElement.style.display='none'"
+                                    class="inline-flex rounded-md p-1.5 {% if category == 'error' %}text-red-500 hover:bg-red-100{% else %}text-green-500 hover:bg-green-100{% endif %}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // Auto-dismiss flash messages after 5 seconds
+        setTimeout(() => {
+            document.querySelectorAll('[class*="bg-red-50"], [class*="bg-green-50"]').forEach(el => {
+                el.style.display = 'none';
+            });
+        }, 5000);
+    </script>
+</body>
+</html>
