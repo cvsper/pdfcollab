@@ -16,10 +16,27 @@ import json
 import base64
 from io import BytesIO
 
+# Import new modules
+from supabase_client import SupabaseManager
+from pdf_processor import PDFProcessor
+
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-change-in-production')
+
+# Initialize database and PDF processor
+try:
+    db = SupabaseManager()
+    pdf_processor = PDFProcessor()
+    USE_DATABASE = True
+    print("✅ Connected to Supabase database")
+except Exception as e:
+    print(f"⚠️  Database connection failed: {e}")
+    print("🔄 Falling back to mock data")
+    db = None
+    pdf_processor = PDFProcessor()
+    USE_DATABASE = False
 
 # File upload configuration
 UPLOAD_FOLDER = 'uploads'
@@ -156,27 +173,216 @@ MOCK_DOCUMENTS = [
 ]
 
 def get_documents():
-    """Get documents (mock data for now)"""
+    """Get documents from database or mock data"""
+    if USE_DATABASE and db:
+        try:
+            return db.get_all_documents()
+        except Exception as e:
+            print(f"Database error: {e}")
+            return MOCK_DOCUMENTS
     return MOCK_DOCUMENTS
 
 def get_document_by_id(document_id):
     """Get single document by ID"""
+    if USE_DATABASE and db:
+        try:
+            return db.get_document(document_id)
+        except Exception as e:
+            print(f"Database error: {e}")
+            return next((doc for doc in MOCK_DOCUMENTS if doc['id'] == document_id), None)
     return next((doc for doc in MOCK_DOCUMENTS if doc['id'] == document_id), None)
 
 def extract_pdf_fields(pdf_path):
-    """Enhanced PDF field extraction with comprehensive detection methods"""
+    """Enhanced PDF field extraction using PyMuPDF for better accuracy"""
+    try:
+        print(f"🔍 Analyzing PDF with enhanced processing: {pdf_path}")
+        
+        # Try PyMuPDF first for better accuracy
+        try:
+            result = pdf_processor.extract_fields_with_pymupdf(pdf_path)
+            
+            if "error" not in result and result.get("fields") and len(result["fields"]) > 0:
+                print(f"✅ PyMuPDF extraction successful: {len(result['fields'])} fields")
+                return result
+        except Exception as pymupdf_error:
+            print(f"⚠️  PyMuPDF extraction failed: {pymupdf_error}")
+        
+        # Fallback to legacy extraction if PyMuPDF fails
+        print("🔄 Falling back to legacy extraction...")
+        try:
+            legacy_result = extract_pdf_fields_legacy(pdf_path)
+            if "error" not in legacy_result and legacy_result.get("fields") and len(legacy_result["fields"]) > 0:
+                print(f"✅ Legacy extraction successful: {len(legacy_result['fields'])} fields")
+                return legacy_result
+        except Exception as legacy_error:
+            print(f"⚠️  Legacy extraction failed: {legacy_error}")
+        
+        # Final fallback - create intelligent defaults
+        print("🔄 Creating intelligent default fields...")
+        return create_default_fields()
+        
+    except Exception as e:
+        print(f"❌ Error in enhanced PDF extraction: {e}")
+        import traceback
+        traceback.print_exc()
+        return create_default_fields()
+
+def create_default_fields():
+    """Create default fields when extraction fails"""
+    default_fields = [
+        {'name': 'Full Name', 'type': 'text', 'assigned_to': 'user1'},
+        {'name': 'Email Address', 'type': 'email', 'assigned_to': 'user1'},
+        {'name': 'Phone Number', 'type': 'tel', 'assigned_to': 'user1'},
+        {'name': 'Date', 'type': 'date', 'assigned_to': 'user1'},
+        {'name': 'Address', 'type': 'text', 'assigned_to': 'user1'},
+        {'name': 'Employee ID', 'type': 'text', 'assigned_to': 'user1'},
+        {'name': 'Department', 'type': 'text', 'assigned_to': 'user1'},
+        {'name': 'Position/Title', 'type': 'text', 'assigned_to': 'user1'},
+        {'name': 'Manager Name', 'type': 'text', 'assigned_to': 'user2'},
+        {'name': 'Manager Signature', 'type': 'signature', 'assigned_to': 'user2'},
+        {'name': 'HR Approval', 'type': 'text', 'assigned_to': 'user2'},
+        {'name': 'Approval Date', 'type': 'date', 'assigned_to': 'user2'},
+        {'name': 'Additional Notes', 'type': 'textarea', 'assigned_to': 'user2'},
+    ]
+    
+    fields = []
+    for i, field_data in enumerate(default_fields):
+        fields.append({
+            'id': f'default_{i}',
+            'name': field_data['name'],
+            'type': field_data['type'],
+            'value': '',
+            'position': {
+                'x': 100 + (i % 2) * 250,
+                'y': 700 - (i // 2) * 60,
+                'width': 200,
+                'height': 30 if field_data['type'] != 'textarea' else 60
+            },
+            'assigned_to': field_data['assigned_to'],
+            'page': 0,
+            'source': 'defaults'
+        })
+    
+    return {"fields": fields}
+
+def safe_get_object(obj_ref):
+    """Safely get object from reference, handling IndirectObject"""
+    try:
+        if hasattr(obj_ref, 'get_object'):
+            return obj_ref.get_object()
+        return obj_ref
+    except Exception as e:
+        print(f"⚠️  Error getting object: {e}")
+        return None
+
+def safe_get_value(obj, key, default=None):
+    """Safely get value from PDF object"""
+    try:
+        if obj is None:
+            return default
+            
+        # Handle IndirectObject
+        if hasattr(obj, 'get_object'):
+            obj = obj.get_object()
+            
+        if obj and hasattr(obj, 'get'):
+            return obj.get(key, default)
+        elif obj and isinstance(obj, dict):
+            return obj.get(key, default)
+        return default
+    except Exception as e:
+        print(f"⚠️  Error getting value for key {key}: {e}")
+        return default
+
+def safe_check_key(obj, key):
+    """Safely check if key exists in PDF object"""
+    try:
+        if obj is None:
+            return False
+            
+        # Handle IndirectObject
+        if hasattr(obj, 'get_object'):
+            obj = obj.get_object()
+            
+        if obj and hasattr(obj, '__contains__'):
+            return key in obj
+        elif obj and isinstance(obj, dict):
+            return key in obj
+        return False
+    except Exception as e:
+        print(f"⚠️  Error checking key {key}: {e}")
+        return False
+
+def extract_name_from_annotation_content(annot, page_num: int, index: int) -> str:
+    """Extract meaningful name from annotation content"""
+    try:
+        # Try to get the actual field name from different annotation properties
+        field_name = None
+        
+        # Method 1: Try to get field name from /T (Title/Name)
+        field_name = safe_get_value(annot, '/T')
+        if field_name:
+            clean_name = str(field_name).strip()
+            if len(clean_name) > 0 and clean_name != 'None':
+                return clean_name.replace(' ', '_').replace(':', '').replace('*', '')
+        
+        # Method 2: Try to get contents
+        contents = safe_get_value(annot, '/Contents')
+        if contents and len(str(contents).strip()) > 0:
+            content_str = str(contents).strip()
+            if len(content_str) < 50 and content_str.replace(' ', '').replace('_', '').isalnum():
+                return content_str.replace(' ', '_').replace(':', '').replace('*', '')
+        
+        # Method 3: Try alternate name field (/TU - User Name)
+        alt_name = safe_get_value(annot, '/TU')
+        if alt_name:
+            clean_name = str(alt_name).strip()
+            if len(clean_name) > 0 and clean_name != 'None':
+                return clean_name.replace(' ', '_').replace(':', '').replace('*', '')
+        
+        # Method 4: Check annotation subtype for meaningful naming
+        subtype = safe_get_value(annot, '/Subtype')
+        if subtype:
+            subtype_str = str(subtype).replace('/', '').lower()
+            if subtype_str == 'widget':
+                # This is a form field, try to create a meaningful name
+                rect = safe_get_value(annot, '/Rect', [0, 0, 100, 20])
+                if rect and len(rect) >= 4:
+                    x, y = int(rect[0]), int(rect[1])
+                    # Create name based on position and common field types
+                    if y > 600:  # Upper part of page
+                        return f"header_field_x{x}_y{y}"
+                    elif y < 200:  # Lower part of page
+                        return f"footer_field_x{x}_y{y}"
+                    else:
+                        return f"form_field_x{x}_y{y}"
+        
+        # Final fallback to position-based naming
+        rect = safe_get_value(annot, '/Rect', [0, 0, 100, 20])
+        if rect and len(rect) >= 4:
+            x, y = int(rect[0]), int(rect[1])
+            return f"field_x{x}_y{y}_p{page_num}"
+        
+        return f"field_{page_num}_{index}"
+        
+    except Exception as e:
+        print(f"⚠️  Error extracting name from annotation: {e}")
+        return f"field_{page_num}_{index}"
+
+def extract_pdf_fields_legacy(pdf_path):
+    """Legacy PDF field extraction method with comprehensive error handling"""
     fields = []
     
     try:
-        print(f"🔍 Analyzing PDF: {pdf_path}")
+        print(f"🔍 Legacy analysis: {pdf_path}")
         
         # Check if file exists first
         if not os.path.exists(pdf_path):
             print(f"⚠️  PDF file not found: {pdf_path}")
-            print("📝 Creating intelligent default fields...")
-            # Skip to Method 4 (intelligent defaults)
-            fields = []
-        else:
+            return {"fields": []}
+        
+        # Wrap the entire PDF processing in try-catch
+        try:
             # Method 1: Extract actual PDF form fields using PyPDF2
             with open(pdf_path, 'rb') as file:
                 pdf_reader = PyPDF2.PdfReader(file)
@@ -186,117 +392,196 @@ def extract_pdf_fields(pdf_path):
                 
                 print(f"📄 PDF has {len(pdf_reader.pages)} pages")
                 
-                # Check for AcroForm fields
-                if '/AcroForm' in pdf_reader.trailer['/Root']:
-                    acro_form = pdf_reader.trailer['/Root']['/AcroForm']
-                    print("✅ Found AcroForm in PDF")
+                # Method 1: Check for AcroForm fields
+                root = safe_get_value(pdf_reader.trailer, '/Root')
+                if root and safe_check_key(root, '/AcroForm'):
+                    acro_form_ref = safe_get_value(root, '/AcroForm')
+                    acro_form = safe_get_object(acro_form_ref)
                     
-                    if '/Fields' in acro_form:
-                        form_fields = acro_form['/Fields']
-                        print(f"📋 Found {len(form_fields)} form fields")
+                    if acro_form:
+                        print("✅ Found AcroForm in PDF")
                         
-                        for i, field in enumerate(form_fields):
-                            field_obj = field.get_object()
-                            field_name = field_obj.get('/T', f'acro_field_{i}')
-                            field_type = field_obj.get('/FT', '/Tx')
-                            field_value = field_obj.get('/V', '')
+                        if safe_check_key(acro_form, '/Fields'):
+                            form_fields_ref = safe_get_value(acro_form, '/Fields')
+                            if form_fields_ref:
+                                form_fields = safe_get_object(form_fields_ref)
+                                
+                                if form_fields and hasattr(form_fields, '__len__'):
+                                    print(f"📋 Found {len(form_fields)} form fields in AcroForm")
+                                    
+                                    for i, field_ref in enumerate(form_fields):
+                                        try:
+                                            # Handle indirect object reference for individual fields
+                                            field_obj = safe_get_object(field_ref)
+                                            
+                                            if not field_obj:
+                                                continue
+                                            
+                                            field_name = safe_get_value(field_obj, '/T', f'acro_field_{i}')
+                                            field_type = safe_get_value(field_obj, '/FT', '/Tx')
+                                            field_value = safe_get_value(field_obj, '/V', '')
+                                            
+                                            # Store the original field name for exact matching
+                                            original_field_name = str(field_name) if field_name else f'acro_field_{i}'
+                                            
+                                            print(f"   📋 Processing field: '{original_field_name}' (type: {field_type})")
+                                            
+                                            # Determine field type more accurately
+                                            if field_type == '/Tx':
+                                                field_input_type = 'text'
+                                            elif field_type == '/Btn':
+                                                # Check button flags for checkbox vs radio
+                                                flags = safe_get_value(field_obj, '/Ff', 0)
+                                                if flags and (flags & 65536):  # Checkbox flag
+                                                    field_input_type = 'checkbox'
+                                                else:
+                                                    field_input_type = 'radio'
+                                            elif field_type == '/Ch':
+                                                field_input_type = 'select'
+                                            elif field_type == '/Sig':
+                                                field_input_type = 'signature'
+                                            else:
+                                                field_input_type = 'text'
+                                            
+                                            # Get field position
+                                            rect = safe_get_value(field_obj, '/Rect')
+                                            if rect and len(rect) >= 4:
+                                                x, y, width, height = rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]
+                                            else:
+                                                x, y, width, height = 100 + (i % 3) * 200, 700 - (i // 3) * 50, 180, 25
+                                            
+                                            # Get additional field properties
+                                            flags = safe_get_value(field_obj, '/Ff', 0) or 0
+                                            is_required = (flags & 2) != 0
+                                            is_readonly = (flags & 1) != 0
+                                            
+                                            # Determine likely user assignment based on field name
+                                            field_name_lower = original_field_name.lower()
+                                            if any(keyword in field_name_lower for keyword in ['signature', 'sign', 'approve', 'manager', 'supervisor', 'hr']):
+                                                assigned_to = 'user2'
+                                            else:
+                                                assigned_to = 'user1'
+                                            
+                                            field_info = {
+                                                'id': f"legacy_{original_field_name}_{i}",  # Use original field name as ID for exact matching
+                                                'name': original_field_name,  # Keep original name for display and matching
+                                                'type': field_input_type,
+                                                'value': str(field_value) if field_value else '',
+                                                'position': {'x': float(x), 'y': float(y), 'width': float(width), 'height': float(height)},
+                                                'assigned_to': assigned_to,
+                                                'page': 0,
+                                                'source': 'acroform_legacy',
+                                                'pdf_field_name': original_field_name,  # Store for exact matching
+                                                'is_required': is_required,
+                                                'is_readonly': is_readonly
+                                            }
+                                            
+                                            fields.append(field_info)
+                                            print(f"   ✅ Added field: {original_field_name} ({field_input_type}) → {assigned_to}")
+                                            
+                                        except Exception as field_error:
+                                            print(f"   ⚠️  Error processing field {i}: {field_error}")
+                                            continue
                             
-                            # Store the original field name for exact matching
-                            original_field_name = str(field_name) if field_name else f'acro_field_{i}'
-                            
-                            # Determine field type
-                            if field_type == '/Tx':
-                                field_input_type = 'text'
-                            elif field_type == '/Btn':
-                                field_input_type = 'checkbox'
-                            elif field_type == '/Ch':
-                                field_input_type = 'select'
-                            else:
-                                field_input_type = 'text'
-                            
-                            # Get field position
-                            if '/Rect' in field_obj:
-                                rect = field_obj['/Rect']
-                                x, y, width, height = rect
-                            else:
-                                x, y, width, height = 100 + (i % 3) * 200, 700 - (i // 3) * 50, 180, 25
-                            
-                            # Determine likely user assignment based on field name
-                            field_name_lower = original_field_name.lower()
-                            if any(keyword in field_name_lower for keyword in ['signature', 'sign', 'approve', 'manager', 'supervisor', 'hr']):
-                                assigned_to = 'user2'
-                            else:
-                                assigned_to = 'user1'
-                            
-                            fields.append({
-                                'id': original_field_name,  # Use original field name as ID for exact matching
-                                'name': original_field_name,  # Keep original name for display and matching
-                                'type': field_input_type,
-                                'value': str(field_value) if field_value else '',
-                                'position': {'x': float(x), 'y': float(y), 'width': float(width), 'height': float(height)},
-                                'assigned_to': assigned_to,
-                                'page': 0,
-                                'source': 'acroform',
-                                'pdf_field_name': original_field_name  # Store for exact matching
-                            })
-                            
-                else:
-                    print("ℹ️  No AcroForm found in PDF")
+                # Method 2: Try to extract from page annotations
+                for page_num, page in enumerate(pdf_reader.pages):
+                    if safe_check_key(page, '/Annots'):
+                        annotations_ref = safe_get_value(page, '/Annots')
+                        if annotations_ref:
+                            annotations = safe_get_object(annotations_ref)
+                        
+                            if annotations and hasattr(annotations, '__len__'):
+                                print(f"📝 Page {page_num + 1}: Found {len(annotations)} annotations")
+                                
+                                for j, annot_ref in enumerate(annotations):
+                                    try:
+                                        annot = safe_get_object(annot_ref)
+                                        
+                                        if not annot:
+                                            continue
+                                        
+                                        subtype = safe_get_value(annot, '/Subtype')
+                                        print(f"   📝 Annotation {j}: subtype='{subtype}'")
+                                        
+                                        if subtype == '/Widget':
+                                            # This is a form field annotation
+                                            # Try multiple ways to get the field name
+                                            annot_name = None
+                                            
+                                            # Method 1: Direct field name
+                                            annot_name = safe_get_value(annot, '/T')
+                                            
+                                            # Method 2: Try alternate name fields
+                                            if not annot_name:
+                                                annot_name = safe_get_value(annot, '/TU')  # User name
+                                            if not annot_name:
+                                                annot_name = safe_get_value(annot, '/TM')  # Mapping name
+                                            
+                                            # Method 3: Try to extract from appearance or content
+                                            if not annot_name:
+                                                annot_name = extract_name_from_annotation_content(annot, page_num, j)
+                                            
+                                            # Method 4: Generate meaningful name based on position and type
+                                            if not annot_name:
+                                                annot_rect = safe_get_value(annot, '/Rect', [0, 0, 100, 20])
+                                                if annot_rect and len(annot_rect) >= 4:
+                                                    x, y = int(annot_rect[0]), int(annot_rect[1])
+                                                    annot_name = f"field_x{x}_y{y}_p{page_num}"
+                                                else:
+                                                    annot_name = f"field_{page_num}_{j}"
+                                            
+                                            annot_rect = safe_get_value(annot, '/Rect', [0, 0, 100, 20])
+                                            
+                                            if annot_rect and len(annot_rect) >= 4:
+                                                field_info = {
+                                                    'id': f"annot_{annot_name}_{page_num}_{j}",
+                                                    'name': str(annot_name),
+                                                    'type': 'text',
+                                                    'value': '',
+                                                    'position': {
+                                                        'x': float(annot_rect[0]),
+                                                        'y': float(annot_rect[1]),
+                                                        'width': float(annot_rect[2] - annot_rect[0]),
+                                                        'height': float(annot_rect[3] - annot_rect[1])
+                                                    },
+                                                    'assigned_to': 'user1',
+                                                    'page': page_num,
+                                                    'source': 'annotation_legacy',
+                                                    'pdf_field_name': str(annot_name)
+                                                }
+                                                
+                                                fields.append(field_info)
+                                                print(f"   📝 Added annotation field: {annot_name}")
+                                            
+                                    except Exception as annot_error:
+                                        print(f"   ⚠️  Error processing annotation {j}: {annot_error}")
+                                        continue
+                                
+                if not fields:
+                    print("ℹ️  No form fields found in PDF structure")
+                    
+        except Exception as pdf_processing_error:
+            print(f"❌ Error during PDF processing: {pdf_processing_error}")
+            import traceback
+            traceback.print_exc()
+            return {"fields": []}
         
-        # Method 4: Create intelligent defaults if no fields found
-        if not fields:
-            print("📝 Creating intelligent default fields...")
-            default_fields = [
-                {'name': 'Full Name', 'type': 'text', 'assigned_to': 'user1'},
-                {'name': 'Email Address', 'type': 'email', 'assigned_to': 'user1'},
-                {'name': 'Phone Number', 'type': 'tel', 'assigned_to': 'user1'},
-                {'name': 'Date', 'type': 'date', 'assigned_to': 'user1'},
-                {'name': 'Address', 'type': 'text', 'assigned_to': 'user1'},
-                {'name': 'Employee ID', 'type': 'text', 'assigned_to': 'user1'},
-                {'name': 'Department', 'type': 'text', 'assigned_to': 'user1'},
-                {'name': 'Position/Title', 'type': 'text', 'assigned_to': 'user1'},
-                {'name': 'Manager Name', 'type': 'text', 'assigned_to': 'user2'},
-                {'name': 'Manager Signature', 'type': 'signature', 'assigned_to': 'user2'},
-                {'name': 'HR Approval', 'type': 'text', 'assigned_to': 'user2'},
-                {'name': 'Approval Date', 'type': 'date', 'assigned_to': 'user2'},
-                {'name': 'Additional Notes', 'type': 'textarea', 'assigned_to': 'user2'},
-            ]
-            
-            for i, field_data in enumerate(default_fields):
-                fields.append({
-                    'id': f'default_{i}',
-                    'name': field_data['name'],
-                    'type': field_data['type'],
-                    'value': '',
-                    'position': {
-                        'x': 100 + (i % 2) * 250,
-                        'y': 700 - (i // 2) * 60,
-                        'width': 200,
-                        'height': 30 if field_data['type'] != 'textarea' else 60
-                    },
-                    'assigned_to': field_data['assigned_to'],
-                    'page': 0,
-                    'source': 'defaults'
-                })
-        
-        print(f"✅ Total fields extracted: {len(fields)}")
+        print(f"✅ Legacy extraction found {len(fields)} fields")
         for field in fields:
             print(f"   - {field['name']} ({field['type']}) → {field['assigned_to']} [{field['source']}]")
             
     except Exception as e:
-        print(f"❌ Error extracting PDF fields: {e}")
+        print(f"❌ Error in legacy PDF extraction: {e}")
         import traceback
         traceback.print_exc()
-        return {"error": f"Failed to process PDF: {str(e)}"}
+        return {"fields": []}
     
     return {"fields": fields}
 
 def convert_pdf_to_image(pdf_path, page_num=0):
-    """Convert PDF page to image for display"""
+    """Convert PDF page to image for display using PyMuPDF"""
     try:
-        # This would require pdf2image in production
-        # For now, return a placeholder
-        return "/static/placeholder-pdf.png"
+        return pdf_processor.convert_pdf_to_image(pdf_path, page_num)
     except Exception as e:
         print(f"Error converting PDF to image: {e}")
         return "/static/placeholder-pdf.png"
@@ -331,10 +616,22 @@ def generate_completed_pdf(document):
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
         print(f"📁 Output path: {output_path}")
         
-        # Try to fill the original PDF first
-        print("🔧 Attempting to fill original PDF...")
+        # Try PyMuPDF first for better accuracy
+        print("🔧 Attempting to fill original PDF with PyMuPDF...")
+        if pdf_processor.fill_pdf_with_pymupdf(document['file_path'], document, output_path):
+            print(f"✅ Successfully filled original PDF with PyMuPDF: {output_path}")
+            return output_path
+        
+        # Fallback to advanced filling
+        print("🔧 Attempting to fill with legacy method...")
         if fill_pdf_fields_advanced(document['file_path'], document, output_path):
             print(f"✅ Successfully filled original PDF: {output_path}")
+            return output_path
+        
+        # Final fallback: create overlay PDF
+        print("🔧 Attempting to create overlay PDF...")
+        if pdf_processor.create_overlay_pdf(document['file_path'], document.get('pdf_fields', []), output_path):
+            print(f"✅ Successfully created overlay PDF: {output_path}")
             return output_path
         else:
             print("⚠️  Could not fill original PDF, generating summary PDF instead")
@@ -802,6 +1099,11 @@ def user2_interface(document_id):
                         print(f"✅ User 2 filled field '{field['name']}': '{field_value}'")
                     else:
                         print(f"⭕ User 2 left field '{field['name']}' empty")
+                        
+                    # Special handling for signature fields - use the digital signature
+                    if field.get('type') == 'signature' and user2_data.get('signature'):
+                        field['value'] = user2_data['signature']
+                        print(f"🖋️  Applied digital signature to field '{field['name']}': '{user2_data['signature'][:20]}...'")
         else:
             print("❌ No pdf_fields found in document")
         
@@ -1066,13 +1368,248 @@ def get_pdf_preview(document_id):
     if not document or 'file_path' not in document:
         return jsonify({'error': 'Document not found'}), 404
     
-    # Convert PDF to image (placeholder for now)
+    # Convert PDF to image
     image_url = convert_pdf_to_image(document['file_path'])
+    
+    # Get PDF info
+    pdf_info = pdf_processor.get_pdf_info(document['file_path'])
     
     return jsonify({
         'preview_url': image_url,
-        'page_count': 1  # Placeholder
+        'page_count': pdf_info.get('page_count', 1),
+        'pdf_info': pdf_info
     })
+
+@app.route('/api/pdf-preview-upload', methods=['POST'])
+def get_pdf_preview_upload():
+    """API endpoint to get PDF preview image from uploaded file"""
+    if 'pdf_file' not in request.files:
+        return jsonify({'error': 'No PDF file provided'}), 400
+    
+    file = request.files['pdf_file']
+    if not file or not allowed_file(file.filename):
+        return jsonify({'error': 'Invalid file type'}), 400
+    
+    # Get page number from form data (default to None for auto-select)
+    page_num = request.form.get('page_num', None)
+    if page_num is not None:
+        try:
+            page_num = int(page_num)
+        except ValueError:
+            page_num = None
+    
+    try:
+        # Save uploaded file temporarily
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_filename = f"preview_{timestamp}_{filename}"
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        file.save(file_path)
+        
+        # Convert PDF to image (specific page or auto-select)
+        image_url = convert_pdf_to_image(file_path, page_num)
+        
+        # Get PDF info
+        pdf_info = pdf_processor.get_pdf_info(file_path)
+        
+        # Determine which page was actually rendered
+        actual_page = 0  # Default
+        if page_num is not None:
+            actual_page = min(page_num, pdf_info.get('page_count', 1) - 1)
+        else:
+            # Find page with most widgets (auto-select logic)
+            import fitz
+            doc = fitz.open(file_path)
+            max_widgets = 0
+            for p_num in range(len(doc)):
+                page = doc[p_num]
+                widgets = list(page.widgets())
+                if len(widgets) > max_widgets:
+                    max_widgets = len(widgets)
+                    actual_page = p_num
+            doc.close()
+        
+        # Clean up temporary file (optional - could keep for later use)
+        # os.remove(file_path)
+        
+        return jsonify({
+            'preview_url': image_url,
+            'page_count': pdf_info.get('page_count', 1),
+            'current_page': actual_page + 1,  # 1-indexed for display
+            'pdf_info': pdf_info,
+            'filename': filename,
+            'file_path': file_path  # Keep for subsequent page requests
+        })
+        
+    except Exception as e:
+        print(f"Error generating PDF preview: {e}")
+        return jsonify({'error': f'Failed to generate PDF preview: {str(e)}'}), 500
+
+@app.route('/api/pdf-page/<path:file_path>/<int:page_num>')
+def get_pdf_page(file_path, page_num):
+    """API endpoint to get a specific page of an already uploaded PDF"""
+    try:
+        # Security check - ensure file path is within uploads directory
+        if not file_path.startswith('uploads/'):
+            return jsonify({'error': 'Invalid file path'}), 400
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'PDF file not found'}), 404
+        
+        # Convert specific page to image
+        image_url = convert_pdf_to_image(file_path, page_num - 1)  # Convert to 0-indexed
+        
+        # Get PDF info
+        pdf_info = pdf_processor.get_pdf_info(file_path)
+        
+        return jsonify({
+            'preview_url': image_url,
+            'page_count': pdf_info.get('page_count', 1),
+            'current_page': page_num,
+            'pdf_info': pdf_info
+        })
+        
+    except Exception as e:
+        print(f"Error generating PDF page: {e}")
+        return jsonify({'error': f'Failed to generate PDF page: {str(e)}'}), 500
+
+@app.route('/api/save-fields/<document_id>', methods=['POST'])
+def save_fields(document_id):
+    """API endpoint to save PDF fields"""
+    try:
+        document = get_document_by_id(document_id)
+        if not document:
+            return jsonify({'error': 'Document not found'}), 404
+        
+        data = request.get_json()
+        fields = data.get('fields', [])
+        
+        if USE_DATABASE and db:
+            # Save to database
+            success = db.save_pdf_fields(document_id, fields)
+            if success:
+                return jsonify({'success': True, 'message': f'Saved {len(fields)} fields'})
+            else:
+                return jsonify({'error': 'Failed to save fields to database'}), 500
+        else:
+            # Update mock data
+            for doc in MOCK_DOCUMENTS:
+                if doc['id'] == document_id:
+                    doc['pdf_fields'] = fields
+                    doc['field_assignments'] = {field['id']: field['assigned_to'] for field in fields}
+                    break
+            
+            return jsonify({'success': True, 'message': f'Saved {len(fields)} fields'})
+            
+    except Exception as e:
+        print(f"Error saving fields: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to save fields: {str(e)}'}), 500
+
+@app.route('/api/pdf-editor/<document_id>')
+def pdf_editor_page(document_id):
+    """PDF Editor page"""
+    document = get_document_by_id(document_id)
+    if not document:
+        flash('Document not found', 'error')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('pdf_editor.html', document=document)
+
+@app.route('/api/field-config/<document_id>/<field_id>', methods=['GET', 'POST'])
+def field_configuration(document_id, field_id):
+    """Get or save field configuration"""
+    if request.method == 'GET':
+        if USE_DATABASE and db:
+            config = db.get_field_configuration(document_id, field_id)
+            return jsonify(config or {})
+        return jsonify({})
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        if USE_DATABASE and db:
+            success = db.save_field_configuration(document_id, field_id, data)
+            return jsonify({'success': success})
+        return jsonify({'success': True})
+
+@app.route('/api/update-field-position/<field_id>', methods=['POST'])
+def update_field_position_api(field_id):
+    """Update field position via API"""
+    try:
+        data = request.get_json()
+        position = data.get('position', {})
+        
+        if USE_DATABASE and db:
+            success = db.update_field_position(field_id, position)
+            return jsonify({'success': success})
+        else:
+            # Update in mock data
+            for doc in MOCK_DOCUMENTS:
+                for field in doc.get('pdf_fields', []):
+                    if field['id'] == field_id:
+                        field['position'] = position
+                        return jsonify({'success': True})
+            
+            return jsonify({'error': 'Field not found'}), 404
+            
+    except Exception as e:
+        print(f"Error updating field position: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/preview/<document_id>')
+def preview_document(document_id):
+    """Preview document page"""
+    document = get_document_by_id(document_id)
+    if not document:
+        flash('Document not found', 'error')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('preview.html', document=document)
+
+@app.route('/api/debug-pdf/<document_id>')
+def debug_pdf_extraction(document_id):
+    """Debug endpoint to test PDF field extraction"""
+    document = get_document_by_id(document_id)
+    if not document or 'file_path' not in document:
+        return jsonify({'error': 'Document not found'}), 404
+    
+    file_path = document['file_path']
+    
+    # Test both extraction methods
+    results = {
+        'file_path': file_path,
+        'file_exists': os.path.exists(file_path),
+        'extraction_results': {}
+    }
+    
+    # Test PyMuPDF extraction
+    try:
+        pymupdf_result = pdf_processor.extract_fields_with_pymupdf(file_path)
+        results['extraction_results']['pymupdf'] = pymupdf_result
+    except Exception as e:
+        results['extraction_results']['pymupdf'] = {'error': str(e)}
+    
+    # Test legacy extraction
+    try:
+        legacy_result = extract_pdf_fields_legacy(file_path)
+        results['extraction_results']['legacy'] = legacy_result
+    except Exception as e:
+        results['extraction_results']['legacy'] = {'error': str(e)}
+    
+    # Get PDF info
+    try:
+        pdf_info = pdf_processor.get_pdf_info(file_path)
+        results['pdf_info'] = pdf_info
+    except Exception as e:
+        results['pdf_info'] = {'error': str(e)}
+    
+    return jsonify(results)
+
+@app.route('/debug-fields')
+def debug_fields_page():
+    """Debug page for testing PDF field extraction"""
+    return render_template('debug_fields.html')
 
 if __name__ == '__main__':
     print("🚀 PDF Collaborator Flask App Starting...")

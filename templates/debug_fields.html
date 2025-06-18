@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Field Detection Debug</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        .field-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
+        }
+        
+        .field-card.user1 {
+            border-left: 4px solid #007bff;
+        }
+        
+        .field-card.user2 {
+            border-left: 4px solid #28a745;
+        }
+        
+        .source-badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        
+        .source-widget { background: #e3f2fd; color: #1976d2; }
+        .source-annotation { background: #fff3e0; color: #f57c00; }
+        .source-text { background: #f3e5f5; color: #7b1fa2; }
+        .source-acroform { background: #e8f5e8; color: #388e3c; }
+        .source-defaults { background: #fce4ec; color: #c2185b; }
+        
+        .position-info {
+            font-family: monospace;
+            font-size: 0.85rem;
+            background: #f8f9fa;
+            padding: 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <div class="row mb-4">
+            <div class="col">
+                <h2><i class="fas fa-bug"></i> PDF Field Detection Debug</h2>
+                <p class="text-muted">Testing field extraction from uploaded PDFs</p>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-upload"></i> Test PDF Upload</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="pdfFile" class="form-label">Upload PDF File</label>
+                                <input type="file" class="form-control" id="pdfFile" accept=".pdf" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Analyze PDF Fields
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="results" style="display: none;">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-cogs"></i> PyMuPDF Extraction</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="pymupdf-results">
+                                <!-- Results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-file-pdf"></i> Legacy Extraction</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="legacy-results">
+                                <!-- Results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-info-circle"></i> PDF Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="pdf-info">
+                                <!-- PDF info will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="loading" style="display: none;" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Analyzing PDF...</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a PDF file');
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            try {
+                // Upload file and analyze
+                const formData = new FormData();
+                formData.append('pdf_file', file);
+                
+                const response = await fetch('/api/extract-fields', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+                
+                // Display results
+                displayResults('pymupdf-results', data.fields || [], 'PyMuPDF');
+                displayResults('legacy-results', [], 'Legacy (not tested in this endpoint)');
+                
+                document.getElementById('pdf-info').innerHTML = `
+                    <p><strong>Fields detected:</strong> ${data.fields ? data.fields.length : 0}</p>
+                    <p><strong>Message:</strong> ${data.message || 'No message'}</p>
+                `;
+                
+                document.getElementById('results').style.display = 'block';
+                
+            } catch (error) {
+                alert('Error analyzing PDF: ' + error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+        
+        function displayResults(containerId, fields, method) {
+            const container = document.getElementById(containerId);
+            
+            if (!fields || fields.length === 0) {
+                container.innerHTML = '<p class="text-muted">No fields detected</p>';
+                return;
+            }
+            
+            let html = `<p><strong>Found ${fields.length} fields:</strong></p>`;
+            
+            fields.forEach((field, index) => {
+                const sourceClass = getSourceClass(field.source);
+                html += `
+                    <div class="field-card ${field.assigned_to}">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>${field.name}</strong>
+                            <span class="source-badge ${sourceClass}">${field.source}</span>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <small class="text-muted">Type:</small> ${field.type}<br>
+                                <small class="text-muted">Assigned to:</small> ${field.assigned_to}<br>
+                                <small class="text-muted">Page:</small> ${field.page || 0}
+                                ${field.value ? `<br><small class="text-muted">Value:</small> ${field.value}` : ''}
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="position-info">
+                                    X: ${field.position.x.toFixed(1)}<br>
+                                    Y: ${field.position.y.toFixed(1)}<br>
+                                    W: ${field.position.width.toFixed(1)}<br>
+                                    H: ${field.position.height.toFixed(1)}
+                                </div>
+                            </div>
+                        </div>
+                        ${field.is_required ? '<span class="badge bg-warning">Required</span>' : ''}
+                        ${field.is_readonly ? '<span class="badge bg-secondary">Read-only</span>' : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function getSourceClass(source) {
+            if (!source) return 'source-defaults';
+            
+            if (source.includes('widget')) return 'source-widget';
+            if (source.includes('annotation')) return 'source-annotation';
+            if (source.includes('text')) return 'source-text';
+            if (source.includes('acroform')) return 'source-acroform';
+            return 'source-defaults';
+        }
+    </script>
+</body>
+</html>

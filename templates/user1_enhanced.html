@@ -194,10 +194,25 @@
 let currentDocumentId = null;
 let pdfFields = [];
 
+// Test function for debugging
+function testAPI() {
+    console.log('🧪 Testing API connectivity...');
+    fetch('/api/extract-fields', { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+        console.log('API test result:', data);
+    })
+    .catch(error => {
+        console.error('API test failed:', error);
+    });
+}
+
 // File upload handling
 function handleFileSelect(input) {
     const file = input.files[0];
     if (file) {
+        console.log('📁 File selected:', file.name, file.size, 'bytes');
+        
         // Show file preview
         document.getElementById('file-name').textContent = file.name;
         document.getElementById('file-size').textContent = formatFileSize(file.size);
@@ -206,65 +221,315 @@ function handleFileSelect(input) {
         // Show PDF editor section
         document.getElementById('pdf-editor').classList.remove('hidden');
         
-        // Simulate PDF upload and field extraction
+        // Start PDF processing immediately
+        console.log('⏳ Starting PDF processing in 1 second...');
         setTimeout(() => {
             loadPDFFields();
         }, 1000);
         
         // Scroll to editor
         document.getElementById('pdf-editor').scrollIntoView({ behavior: 'smooth' });
+    } else {
+        console.warn('⚠️ No file selected');
     }
 }
 
 function loadPDFFields() {
+    console.log('🔄 Starting PDF field extraction...');
+    
     const fileInput = document.getElementById('pdf_file');
     if (!fileInput.files[0]) {
+        console.error('❌ No PDF file selected');
         showErrorMessage('No PDF file selected');
         return;
     }
     
-    const formData = new FormData();
-    formData.append('pdf_file', fileInput.files[0]);
+    const file = fileInput.files[0];
+    console.log(`📄 Processing file: ${file.name} (${file.size} bytes)`);
     
-    // Make API call to extract PDF fields
+    const formData = new FormData();
+    formData.append('pdf_file', file);
+    
+    // Create separate FormData objects for each request
+    const formDataFields = new FormData();
+    formDataFields.append('pdf_file', fileInput.files[0]);
+    
+    const formDataPreview = new FormData();
+    formDataPreview.append('pdf_file', fileInput.files[0]);
+    
+    // Extract PDF fields first, then preview
+    console.log('🚀 Calling /api/extract-fields...');
     fetch('/api/extract-fields', {
         method: 'POST',
-        body: formData
+        body: formDataFields
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(response => {
+        console.log('📡 Extract fields response status:', response.status);
+        return response.json();
+    })
+    .then(fieldsData => {
+        console.log('✅ Fields API response:', fieldsData);
+        
+        // Now get preview
+        console.log('🚀 Calling /api/pdf-preview-upload...');
+        return fetch('/api/pdf-preview-upload', {
+            method: 'POST',
+            body: formDataPreview
+        })
+        .then(response => {
+            console.log('📡 Preview response status:', response.status);
+            return response.json();
+        })
+        .then(previewData => {
+            console.log('✅ Preview API response:', previewData);
+            return [fieldsData, previewData];
+        });
+    })
+    .then(([fieldsData, previewData]) => {
+        console.log('✅ Received API responses:');
+        console.log('   Fields data:', fieldsData);
+        console.log('   Preview data:', previewData);
+        
         // Hide loading
         document.getElementById('loading-fields').classList.add('hidden');
         
-        if (data.error) {
-            showErrorMessage('Error extracting PDF fields: ' + data.error);
-            // Show fallback message
+        // Handle PDF preview
+        if (previewData.preview_url && !previewData.error) {
+            console.log('✅ Loading PDF preview...');
+            loadPDFPreview(
+                previewData.preview_url, 
+                previewData.pdf_info, 
+                previewData.current_page || 1,
+                previewData.file_path
+            );
+        } else {
+            console.warn('❌ PDF preview failed:', previewData.error);
+        }
+        
+        // Handle PDF fields
+        if (fieldsData.error) {
+            console.error('❌ PDF fields extraction error:', fieldsData.error);
+            showErrorMessage('Error extracting PDF fields: ' + fieldsData.error);
             document.getElementById('no-fields').classList.remove('hidden');
             return;
         }
         
-        if (data.fields && data.fields.length > 0) {
-            pdfFields = data.fields;
+        if (fieldsData.fields && fieldsData.fields.length > 0) {
+            pdfFields = fieldsData.fields;
             console.log('📋 Loaded PDF fields:', pdfFields.length);
             pdfFields.forEach((field, index) => {
                 console.log(`   ${index + 1}. ${field.name} (${field.id}) → ${field.assigned_to} [${field.value || 'empty'}]`);
             });
             document.getElementById('pdf-fields-list').classList.remove('hidden');
             renderPDFFields();
-            showNotification(`Successfully detected ${data.fields.length} fields from your PDF!`, 'success');
+            showNotification(`Successfully detected ${fieldsData.fields.length} fields from your PDF!`, 'success');
         } else {
+            console.warn('⚠️ No fields found in PDF');
             // No fields found
             document.getElementById('no-fields').classList.remove('hidden');
             showNotification('No form fields detected in this PDF. You can add custom fields manually.', 'info');
         }
     })
     .catch(error => {
-        console.error('Error extracting PDF fields:', error);
+        console.error('❌ Error processing PDF:', error);
         document.getElementById('loading-fields').classList.add('hidden');
         document.getElementById('no-fields').classList.remove('hidden');
         showErrorMessage('Failed to analyze PDF. You can add custom fields manually.');
     });
 }
+
+// Global variables for page navigation
+let currentPdfInfo = null;
+let currentFilePath = null;
+let currentPage = 1;
+
+function loadPDFPreview(previewUrl, pdfInfo, currentPageNum = 1, filePath = null) {
+    const container = document.getElementById('pdf-preview-container');
+    
+    // Store PDF info globally for navigation
+    currentPdfInfo = pdfInfo;
+    currentFilePath = filePath;
+    currentPage = currentPageNum;
+    
+    if (previewUrl) {
+        const pageCount = pdfInfo?.page_count || 1;
+        const hasMultiplePages = pageCount > 1;
+        
+        container.innerHTML = `
+            <div class="w-full max-w-full">
+                ${hasMultiplePages ? `
+                    <!-- Page Navigation Controls -->
+                    <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg border">
+                        <button id="prev-page" 
+                                onclick="navigateToPage(${currentPage - 1})"
+                                class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                ${currentPage <= 1 ? 'disabled' : ''}>
+                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            Previous
+                        </button>
+                        
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-600">Page</span>
+                            <input type="number" 
+                                   id="page-input"
+                                   value="${currentPage}" 
+                                   min="1" 
+                                   max="${pageCount}"
+                                   class="w-16 px-2 py-1 text-sm text-center border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                   onchange="navigateToPage(parseInt(this.value))"
+                                   onkeypress="if(event.key==='Enter') navigateToPage(parseInt(this.value))">
+                            <span class="text-sm text-gray-600">of ${pageCount}</span>
+                        </div>
+                        
+                        <button id="next-page" 
+                                onclick="navigateToPage(${currentPage + 1})"
+                                class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                ${currentPage >= pageCount ? 'disabled' : ''}>
+                            Next
+                            <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </div>
+                ` : ''}
+                
+                <!-- PDF Image -->
+                <div class="relative">
+                    <img src="${previewUrl}" 
+                         alt="PDF Preview - Page ${currentPage}"
+                         class="w-full h-auto rounded-lg shadow-sm border border-gray-200"
+                         style="max-height: 600px; object-fit: contain;">
+                    ${hasMultiplePages ? `
+                        <div class="absolute top-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
+                            ${currentPage} / ${pageCount}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <!-- PDF Info -->
+                <div class="mt-2 text-sm text-gray-500 text-center">
+                    Page ${currentPage} of ${pageCount} • ${pdfInfo?.form_field_count || 0} form fields detected
+                    ${hasMultiplePages ? '<br><span class="text-xs">Use navigation controls above to browse pages</span>' : ''}
+                </div>
+            </div>
+        `;
+        console.log(`✅ PDF preview loaded successfully - Page ${currentPage} of ${pageCount}`);
+    } else {
+        container.innerHTML = `
+            <div class="text-center">
+                <svg class="mx-auto h-16 w-16 text-red-400 mb-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <p class="text-gray-500">Failed to load PDF preview</p>
+            </div>
+        `;
+    }
+}
+
+function navigateToPage(pageNum) {
+    if (!currentPdfInfo || !currentFilePath) {
+        console.error('❌ No PDF loaded for navigation');
+        return;
+    }
+    
+    const pageCount = currentPdfInfo.page_count || 1;
+    
+    // Validate page number
+    if (pageNum < 1 || pageNum > pageCount) {
+        console.warn(`⚠️ Invalid page number: ${pageNum}. Valid range: 1-${pageCount}`);
+        return;
+    }
+    
+    if (pageNum === currentPage) {
+        console.log(`ℹ️ Already on page ${pageNum}`);
+        return;
+    }
+    
+    console.log(`🔄 Navigating to page ${pageNum}...`);
+    
+    // Show loading state
+    const container = document.getElementById('pdf-preview-container');
+    const img = container.querySelector('img');
+    if (img) {
+        img.style.opacity = '0.5';
+    }
+    
+    // Call API to get specific page
+    fetch(`/api/pdf-page/${encodeURIComponent(currentFilePath)}/${pageNum}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.preview_url && !data.error) {
+            console.log(`✅ Loaded page ${pageNum}`);
+            loadPDFPreview(
+                data.preview_url,
+                data.pdf_info,
+                data.current_page,
+                currentFilePath
+            );
+        } else {
+            throw new Error(data.error || 'Failed to load page');
+        }
+    })
+    .catch(error => {
+        console.error(`❌ Error loading page ${pageNum}:`, error);
+        showErrorMessage(`Failed to load page ${pageNum}: ${error.message}`);
+        
+        // Restore image opacity
+        if (img) {
+            img.style.opacity = '1';
+        }
+    });
+}
+
+// Keyboard navigation support
+document.addEventListener('keydown', function(event) {
+    // Only handle keyboard navigation when PDF preview is visible and focused
+    const previewContainer = document.getElementById('pdf-preview-container');
+    if (!previewContainer || !currentPdfInfo || currentPdfInfo.page_count <= 1) {
+        return;
+    }
+    
+    // Check if user is typing in an input field
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        return;
+    }
+    
+    switch(event.key) {
+        case 'ArrowLeft':
+        case 'ArrowUp':
+            if (currentPage > 1) {
+                event.preventDefault();
+                navigateToPage(currentPage - 1);
+            }
+            break;
+        case 'ArrowRight':
+        case 'ArrowDown':
+            if (currentPage < currentPdfInfo.page_count) {
+                event.preventDefault();
+                navigateToPage(currentPage + 1);
+            }
+            break;
+        case 'Home':
+            if (currentPage > 1) {
+                event.preventDefault();
+                navigateToPage(1);
+            }
+            break;
+        case 'End':
+            if (currentPage < currentPdfInfo.page_count) {
+                event.preventDefault();
+                navigateToPage(currentPdfInfo.page_count);
+            }
+            break;
+    }
+});
 
 function showErrorMessage(message) {
     showNotification(message, 'error');
