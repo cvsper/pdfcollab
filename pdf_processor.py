@@ -228,6 +228,31 @@ class PDFProcessor:
                 if self.is_signature_field(original_field_name or field_name, field_name):
                     widget_info['type'] = 'signature'
                     print(f"   🖋️  Detected signature field: {field_name}")
+                
+                # Check for other field types based on field name
+                field_name_lower = field_name.lower()
+                
+                # Radio button field patterns (yes/no choice fields)
+                radio_patterns = [
+                    'heating', 'fuel', 'utility', 'electric', 'gas', 'property owner', 'rented', 'tenant',
+                    'applicant is', 'account', 'listed under', 'check one', 'select one', 'choose one'
+                ]
+                if any(pattern in field_name_lower for pattern in radio_patterns):
+                    widget_info['type'] = 'radio'
+                    print(f"   🔘 Detected radio field: {field_name}")
+                elif any(keyword in field_name_lower for keyword in ['phone', 'telephone', 'tel', 'mobile', 'cell']):
+                    widget_info['type'] = 'tel'
+                    print(f"   📞 Detected phone field: {field_name}")
+                elif any(keyword in field_name_lower for keyword in ['date', 'signed', 'when', 'time']):
+                    widget_info['type'] = 'date'  
+                    print(f"   📅 Detected date field: {field_name}")
+                elif any(keyword in field_name_lower for keyword in ['email', 'e-mail', '@']):
+                    widget_info['type'] = 'email'
+                    print(f"   📧 Detected email field: {field_name}")
+                elif any(keyword in field_name_lower for keyword in ['name', 'applicant', 'person', 'individual']) and 'phone' not in field_name_lower:
+                    # Keep as text but ensure it's marked as a name field
+                    widget_info['type'] = 'text'
+                    print(f"   👤 Detected name field: {field_name}")
             
             return widget_info
             
@@ -359,9 +384,26 @@ class PDFProcessor:
             
             # Dates and signatures
             'date3': 'Date',
+            'date': 'Date',
             'signature3': 'Signature',
+            'signature': 'Signature',
             'date_property_mang3': 'Property Manager Date',
             'property_ower_sig3': 'Property Owner Signature',
+            
+            # Common form field patterns
+            'printed_name': 'Printed Name',
+            'print_name': 'Printed Name',
+            'name_print': 'Printed Name',
+            'applicant_name': 'Applicant Name',
+            'daytime_phone': 'Daytime Telephone Number',
+            'daytime_telephone': 'Daytime Telephone Number',
+            'day_phone': 'Daytime Phone Number',
+            'telephone_number': 'Telephone Number',
+            'phone_daytime': 'Daytime Phone Number',
+            'applicant_signature': 'Applicant Signature',
+            'applicant_signiture': 'Applicant Signature',
+            'signed_date': 'Date Signed',
+            'date_signed': 'Date Signed',
             
             # Property/Landlord information
             'landlord_name3': 'Landlord Name',
@@ -724,6 +766,42 @@ class PDFProcessor:
         
         return 'user1'
     
+    def get_widget_type(self, widget) -> str:
+        """Determine the type of a PDF widget"""
+        try:
+            field_type_code = widget.field_type
+            field_type_string = widget.field_type_string
+            
+            # Map field type based on PyMuPDF field types
+            if field_type_code == 1:  # PDF_WIDGET_TYPE_BUTTON
+                if widget.field_flags & 32768:  # Radio button
+                    return 'radio'
+                elif widget.field_flags & 65536:  # Checkbox
+                    return 'checkbox'
+                else:
+                    return 'button'
+            elif field_type_code == 2:  # PDF_WIDGET_TYPE_TEXT or CheckBox in some cases
+                if field_type_string == 'CheckBox':
+                    return 'checkbox'
+                else:
+                    return 'text'
+            elif field_type_code == 3:  # PDF_WIDGET_TYPE_LISTBOX
+                return 'select'
+            elif field_type_code == 4:  # PDF_WIDGET_TYPE_COMBOBOX
+                return 'select'
+            elif field_type_code == 5:  # PDF_WIDGET_TYPE_SIGNATURE or RadioButton
+                if field_type_string == 'RadioButton':
+                    return 'radio'
+                else:
+                    return 'signature'
+            elif field_type_code == 7:  # Text field
+                return 'text'
+            else:
+                return self.supported_field_types.get(field_type_string, 'text')
+        except Exception as e:
+            print(f"⚠️  Error determining widget type: {e}")
+            return 'text'
+    
     def fill_pdf_with_pymupdf(self, pdf_path: str, document: Dict[str, Any], output_path: str) -> bool:
         """Fill PDF using PyMuPDF with signature support"""
         try:
@@ -768,10 +846,24 @@ class PDFProcessor:
                             
                         try:
                             field_value = field_mapping[field_name]
-                            widget.field_value = str(field_value)
-                            widget.update()
-                            filled_count += 1
-                            print(f"✅ Filled field '{field_name}' with '{field_value}'")
+                            
+                            # Special handling for radio buttons - only fill if value is "yes" or "true"
+                            widget_type = self.get_widget_type(widget)
+                            if widget_type == 'radio':
+                                if str(field_value).lower() in ['yes', 'true', '1']:
+                                    widget.field_value = True
+                                    widget.update()
+                                    filled_count += 1
+                                    print(f"✅ Filled radio field '{field_name}' with True (yes)")
+                                else:
+                                    # Leave radio button blank for "no" or "false"
+                                    print(f"⚪ Left radio field '{field_name}' blank (no/false)")
+                            else:
+                                # Handle other field types normally
+                                widget.field_value = str(field_value)
+                                widget.update()
+                                filled_count += 1
+                                print(f"✅ Filled field '{field_name}' with '{field_value}'")
                         except Exception as e:
                             print(f"⚠️  Could not fill field '{field_name}': {e}")
             
