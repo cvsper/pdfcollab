@@ -143,6 +143,15 @@
                                                     <span class="ml-2 text-sm text-gray-700">No</span>
                                                 </label>
                                             </div>
+                                        {% elif field.type == 'checkbox' %}
+                                            <div class="mt-2">
+                                                <label class="inline-flex items-center">
+                                                    <input type="checkbox" name="field_{{ field.id }}" value="true"
+                                                           class="form-checkbox h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                                           {% if field.value == 'true' or field.value == true or field.value == 'yes' %}checked{% endif %}>
+                                                    <span class="ml-2 text-sm text-gray-700">{{ field.name }}</span>
+                                                </label>
+                                            </div>
                                         {% elif field.type == 'textarea' %}
                                             <textarea name="field_{{ field.id }}" rows="3"
                                                       class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
@@ -473,7 +482,7 @@ function saveSignature() {
             alert('Please enter your signature');
             return;
         }
-        signatureData = 'typed:' + typedSig;
+        signatureData = typedSig;
     }
     
     document.getElementById('signature-data').value = signatureData;

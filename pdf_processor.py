@@ -832,13 +832,20 @@ class PDFProcessor:
             print(f"📋 Created field mapping with {len(field_mapping)} entries")
             print(f"🖋️  Found {len(signature_fields)} signature fields")
             
+            # Debug: Show field mapping
+            print("🔍 Field mapping details:")
+            for key, value in list(field_mapping.items())[:5]:  # Show first 5
+                print(f"   '{key}' → '{value}'")
+            
             # Fill regular form fields first
             for page_num in range(len(doc)):
                 page = doc[page_num]
                 widgets = list(page.widgets())
+                print(f"📄 Page {page_num + 1}: Found {len(widgets)} widgets")
                 
                 for widget in widgets:
                     field_name = widget.field_name
+                    print(f"🔍 Widget field name: '{field_name}' (in mapping: {field_name in field_mapping if field_name else False})")
                     if field_name and field_name in field_mapping:
                         # Skip signature fields - handle them separately
                         if field_name in signature_fields:
@@ -847,17 +854,32 @@ class PDFProcessor:
                         try:
                             field_value = field_mapping[field_name]
                             
-                            # Special handling for radio buttons - only fill if value is "yes" or "true"
+                            # Special handling for radio buttons and checkboxes
                             widget_type = self.get_widget_type(widget)
                             if widget_type == 'radio':
-                                if str(field_value).lower() in ['yes', 'true', '1']:
+                                # Convert 'Off' to 'no' for consistency
+                                if str(field_value).lower() == 'off':
+                                    field_value = 'no'
+                                
+                                if str(field_value).lower() in ['yes', 'true', '1', 'on']:
                                     widget.field_value = True
                                     widget.update()
                                     filled_count += 1
                                     print(f"✅ Filled radio field '{field_name}' with True (yes)")
                                 else:
-                                    # Leave radio button blank for "no" or "false"
-                                    print(f"⚪ Left radio field '{field_name}' blank (no/false)")
+                                    # Leave radio button blank for "no", "false", "off", etc.
+                                    print(f"⚪ Left radio field '{field_name}' blank (no/false/off)")
+                            elif widget_type == 'checkbox':
+                                if str(field_value).lower() in ['true', 'yes', '1', 'checked']:
+                                    widget.field_value = True
+                                    widget.update()
+                                    filled_count += 1
+                                    print(f"✅ Filled checkbox field '{field_name}' with True (checked)")
+                                else:
+                                    # Leave checkbox unchecked for "false" or "no"
+                                    widget.field_value = False
+                                    widget.update()
+                                    print(f"☐ Left checkbox field '{field_name}' unchecked (false)")
                             else:
                                 # Handle other field types normally
                                 widget.field_value = str(field_value)
@@ -959,6 +981,10 @@ class PDFProcessor:
     def insert_signature_text(self, page, signature_text: str, position: dict, field_name: str):
         """Insert text signature with signature font styling"""
         try:
+            # Clean up signature text - remove any "typed:" prefix
+            if signature_text.startswith('typed:'):
+                signature_text = signature_text[6:]  # Remove "typed:" prefix
+            
             x = position.get('x', 0)
             y = position.get('y', 0)
             width = position.get('width', 100)
@@ -973,23 +999,39 @@ class PDFProcessor:
             print(f"🎯 Adjusted text position: x={text_x:.1f}, y={text_y:.1f}")
             
             # Insert styled text to look like a signature
-            # Use default font if italic not available
-            try:
+            # Try different cursive/script fonts for a more authentic signature look
+            signature_fonts = [
+                "times-italic",      # Times italic (more elegant)
+                "helv-oblique",      # Helvetica oblique
+                "cour-oblique",      # Courier oblique (script-like)
+            ]
+            
+            font_used = False
+            for font in signature_fonts:
+                try:
+                    page.insert_text(
+                        (text_x, text_y),
+                        signature_text,
+                        fontsize=max(12, min(height - 2, 18)),  # Slightly larger for signature
+                        color=(0, 0, 0.8),  # Darker blue color for signatures
+                        fontname=font
+                    )
+                    font_used = True
+                    print(f"✍️  Used signature font: {font}")
+                    break
+                except Exception as e:
+                    print(f"   ⚠️  Font {font} not available: {e}")
+                    continue
+            
+            # Fallback to default font if none worked
+            if not font_used:
                 page.insert_text(
                     (text_x, text_y),
                     signature_text,
-                    fontsize=max(10, min(height - 2, 16)),  # Scale font to field height
-                    color=(0, 0, 0.7),  # Dark blue color
-                    fontname="helv-oblique"  # Italic font for signature look
+                    fontsize=max(12, min(height - 2, 18)),  # Slightly larger for signature
+                    color=(0, 0, 0.8)  # Darker blue color, no font specified (uses default)
                 )
-            except:
-                # Fallback to default font
-                page.insert_text(
-                    (text_x, text_y),
-                    signature_text,
-                    fontsize=max(10, min(height - 2, 16)),  # Scale font to field height
-                    color=(0, 0, 0.7)  # Dark blue color, no font specified (uses default)
-                )
+                print("   ⚠️  Using default font for signature")
             
             print(f"✍️  Inserted signature text '{signature_text}' for '{field_name}' at field position ({x:.1f}, {y:.1f})")
             

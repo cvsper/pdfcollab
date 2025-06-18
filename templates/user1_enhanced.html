@@ -25,7 +25,7 @@
                 <div class="mt-5">
                     <div id="file-drop-area" 
                          class="flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6 hover:border-blue-400 transition-colors cursor-pointer"
-                         onclick="document.getElementById('pdf_file').click()">
+                         onclick="console.log('Drop area clicked'); document.getElementById('pdf_file').click()">
                         <div class="space-y-1 text-center">
                             <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -116,6 +116,7 @@
                                     <option value="tel">Phone</option>
                                     <option value="date">Date</option>
                                     <option value="textarea">Textarea</option>
+                                    <option value="checkbox">Checkbox</option>
                                     <option value="radio">Radio (Yes/No)</option>
                                     <option value="signature">Signature</option>
                                 </select>
@@ -210,6 +211,10 @@ function testAPI() {
 
 // File upload handling
 function handleFileSelect(input) {
+    console.log('🔍 handleFileSelect called with input:', input);
+    console.log('🔍 Input files:', input.files);
+    console.log('🔍 Input files length:', input.files.length);
+    
     const file = input.files[0];
     if (file) {
         console.log('📁 File selected:', file.name, file.size, 'bytes');
@@ -555,38 +560,46 @@ function createFieldElement(field) {
             <div class="flex-1">
                 <h5 class="font-medium text-gray-900">${field.name}</h5>
                 <p class="text-sm text-gray-600 capitalize">${field.type} field</p>
-                ${field.assigned_to === 'user1' ? (
-                    field.type === 'radio' ? `
-                    <div class="mt-2 space-y-2">
-                        <label class="inline-flex items-center">
-                            <input type="radio" 
-                                   name="radio_${field.id}" 
-                                   value="yes"
-                                   class="form-radio text-blue-600 focus:ring-blue-500"
-                                   ${field.value === 'yes' || field.value === 'true' ? 'checked' : ''}
-                                   onchange="updateFieldValue('${field.id}', 'yes')">
-                            <span class="ml-2 text-sm text-gray-700">Yes</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" 
-                                   name="radio_${field.id}" 
-                                   value="no"
-                                   class="form-radio text-blue-600 focus:ring-blue-500"
-                                   ${field.value === 'no' || field.value === 'false' || !field.value ? 'checked' : ''}
-                                   onchange="updateFieldValue('${field.id}', 'no')">
-                            <span class="ml-2 text-sm text-gray-700">No</span>
-                        </label>
-                    </div>
-                    ` : `
-                    <input type="${field.type === 'textarea' ? 'text' : field.type}" 
-                           class="mt-2 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="Enter value..."
-                           value="${field.value || ''}"
-                           onchange="updateFieldValue('${field.id}', this.value)"
-                           onkeyup="updateFieldValue('${field.id}', this.value)"
-                           onblur="updateFieldValue('${field.id}', this.value)">
-                    `
-                ) : `
+                ${field.assigned_to === 'user1' ? 
+                    (field.type === 'radio' ? 
+                        `<div class="mt-2 space-y-2">
+                            <label class="inline-flex items-center">
+                                <input type="radio" 
+                                       name="radio_${field.id}" 
+                                       value="yes"
+                                       class="form-radio text-blue-600 focus:ring-blue-500"
+                                       ${field.value === 'yes' || field.value === 'true' ? 'checked' : ''}
+                                       onchange="updateFieldValue('${field.id}', 'yes')">
+                                <span class="ml-2 text-sm text-gray-700">Yes</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" 
+                                       name="radio_${field.id}" 
+                                       value="no"
+                                       class="form-radio text-blue-600 focus:ring-blue-500"
+                                       ${field.value === 'no' || field.value === 'false' || field.value === 'Off' || !field.value ? 'checked' : ''}
+                                       onchange="updateFieldValue('${field.id}', 'no')">
+                                <span class="ml-2 text-sm text-gray-700">No</span>
+                            </label>
+                        </div>` 
+                    : field.type === 'checkbox' ? 
+                        `<div class="mt-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" 
+                                       class="form-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                       ${field.value === 'true' || field.value === true || field.value === 'yes' ? 'checked' : ''}
+                                       onchange="updateFieldValue('${field.id}', this.checked ? 'true' : 'false')">
+                                <span class="ml-2 text-sm text-gray-700">${field.name}</span>
+                            </label>
+                        </div>` 
+                    : `<input type="${field.type === 'textarea' ? 'text' : field.type}" 
+                             class="mt-2 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                             placeholder="Enter value..."
+                             value="${field.value || ''}"
+                             onchange="updateFieldValue('${field.id}', this.value)"
+                             onkeyup="updateFieldValue('${field.id}', this.value)"
+                             onblur="updateFieldValue('${field.id}', this.value)">`)
+                : `
                     <p class="text-sm text-orange-600 mt-1">📝 Assigned to User 2</p>
                 `}
             </div>
