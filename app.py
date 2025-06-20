@@ -1131,33 +1131,7 @@ def fill_pdf_fields(pdf_path, field_data, output_path):
 @app.route('/')
 def index():
     """Landing page - React app for marketing site"""
-    try:
-        return render_template('index.html')
-    except:
-        # Fallback if template is not available
-        return '''
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>PDF Collaborator</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
-                .container { max-width: 600px; margin: 0 auto; }
-                .btn { background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>PDF Collaborator</h1>
-                <p>Collaborative PDF form filling and signing platform</p>
-                <div>
-                    <a href="/dashboard" class="btn">Dashboard</a>
-                    <a href="/health" class="btn">Health Check</a>
-                </div>
-            </div>
-        </body>
-        </html>
-        '''
+    return render_template('index.html')
 
 @app.route('/dashboard')
 @login_required
