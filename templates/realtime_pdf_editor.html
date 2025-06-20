@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time PDF Editor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/realtime-editor.css') }}">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+    <div id="app" class="pdf-editor-app">
+        <!-- Header -->
+        <header class="editor-header">
+            <div class="header-left">
+                <h1>📄 Real-Time PDF Editor</h1>
+                <span class="document-name" id="documentName">{{ document.name if document else 'Loading...' }}</span>
+            </div>
+            <div class="header-center">
+                <div class="zoom-controls">
+                    <button id="zoomOut" class="btn btn-sm">−</button>
+                    <span id="zoomLevel">100%</span>
+                    <button id="zoomIn" class="btn btn-sm">+</button>
+                </div>
+                <div class="page-controls">
+                    <button id="prevPage" class="btn btn-sm">‹</button>
+                    <span id="pageInfo">Page 1 of 1</span>
+                    <button id="nextPage" class="btn btn-sm">›</button>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="status-indicator">
+                    <div id="connectionStatus" class="status-dot offline"></div>
+                    <span id="statusText">Connecting...</span>
+                </div>
+                <button id="saveBtn" class="btn btn-primary">💾 Save</button>
+                <button id="downloadBtn" class="btn btn-success">⬇️ Download PDF</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="editor-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>📝 Form Fields</h3>
+                    <div id="fieldsList" class="fields-list">
+                        <!-- Fields will be populated dynamically -->
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3>⚙️ Field Properties</h3>
+                    <div id="fieldProperties" class="field-properties">
+                        <p class="no-selection">Select a field to edit properties</p>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>👥 Collaboration</h3>
+                    <div id="activeUsers" class="active-users">
+                        <!-- Active users will be shown here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- PDF Viewer -->
+            <div class="pdf-viewer-container">
+                <div id="pdfViewer" class="pdf-viewer">
+                    <div class="pdf-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading PDF...</p>
+                    </div>
+                    <!-- PDF pages will be rendered here -->
+                </div>
+                
+                <!-- Field Overlay -->
+                <div id="fieldOverlay" class="field-overlay">
+                    <!-- Interactive fields will be overlaid here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Modal -->
+        <div id="uploadModal" class="modal" style="display: {{ 'none' if document else 'block' }}">
+            <div class="modal-content">
+                <h2>📄 Upload PDF Document</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📄</div>
+                    <p>Drag & drop your PDF here or click to browse</p>
+                    <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;">
+                    <button class="btn btn-primary" onclick="document.getElementById('pdfFileInput').click()">
+                        Choose PDF File
+                    </button>
+                </div>
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p id="progressText">Uploading...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Field Edit Modal -->
+        <div id="fieldEditModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>✏️ Edit Field</h3>
+                    <button class="modal-close" onclick="closeFieldEditModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="fieldEditForm">
+                        <div class="form-group">
+                            <label for="fieldName">Field Name:</label>
+                            <input type="text" id="fieldName" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="fieldType">Field Type:</label>
+                            <select id="fieldType" class="form-control">
+                                <option value="text">Text</option>
+                                <option value="email">Email</option>
+                                <option value="tel">Phone</option>
+                                <option value="date">Date</option>
+                                <option value="checkbox">Checkbox</option>
+                                <option value="radio">Radio</option>
+                                <option value="signature">Signature</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fieldValue">Value:</label>
+                            <input type="text" id="fieldValue" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="fieldRequired">
+                                <input type="checkbox" id="fieldRequired"> Required Field
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="fieldAssignedTo">Assigned To:</label>
+                            <select id="fieldAssignedTo" class="form-control">
+                                <option value="user1">User 1</option>
+                                <option value="user2">User 2</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeFieldEditModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveFieldChanges()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/realtime-pdf-editor.js') }}"></script>
+    <script>
+        // Initialize the PDF Editor
+        const pdfEditor = new RealtimePDFEditor({
+            documentId: '{{ document.id if document else "" }}',
+            socketUrl: window.location.origin,
+            apiBaseUrl: '/realtime/api'
+        });
+    </script>
+</body>
+</html>

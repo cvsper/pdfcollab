@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDFCollab - Collaborate on PDFs in Real-time</title>
+    <meta name="description" content="Edit, annotate, and collaborate on PDF documents with your team. PDFCollab makes working with PDFs simple and efficient." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const { useState } = React;
+
+      const Header = () => {
+        const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+        return (
+          <header className="sticky top-0 z-50 bg-white shadow-sm">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-16">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <span className="text-2xl font-bold text-blue-600">
+                      PDFCollab
+                    </span>
+                  </div>
+                  <nav className="hidden md:ml-10 md:flex md:space-x-8">
+                    <a
+                      href="#features"
+                      className="text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium"
+                    >
+                      Features
+                    </a>
+                    <a
+                      href="#how-it-works"
+                      className="text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium"
+                    >
+                      How It Works
+                    </a>
+                    <a
+                      href="#testimonials"
+                      className="text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium"
+                    >
+                      Testimonials
+                    </a>
+                    <a
+                      href="#pricing"
+                      className="text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium"
+                    >
+                      Pricing
+                    </a>
+                  </nav>
+                </div>
+                <div className="hidden md:flex items-center space-x-4">
+                  <a
+                    href="/auth/login"
+                    className="text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium"
+                  >
+                    Login
+                  </a>
+                  <a
+                    href="/auth/register"
+                    className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    Sign Up Free
+                  </a>
+                </div>
+                <div className="md:hidden flex items-center">
+                  <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-blue-600 hover:bg-gray-100 focus:outline-none"
+                  >
+                    {isMenuOpen ? '✕' : '☰'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            {isMenuOpen && (
+              <div className="md:hidden bg-white shadow-md">
+                <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                  <a
+                    href="#features"
+                    className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-blue-600"
+                  >
+                    Features
+                  </a>
+                  <a
+                    href="#how-it-works"
+                    className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-blue-600"
+                  >
+                    How It Works
+                  </a>
+                  <a
+                    href="#testimonials"
+                    className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-blue-600"
+                  >
+                    Testimonials
+                  </a>
+                  <a
+                    href="#pricing"
+                    className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-blue-600"
+                  >
+                    Pricing
+                  </a>
+                  <a
+                    href="/auth/login"
+                    className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-blue-600"
+                  >
+                    Login
+                  </a>
+                  <a
+                    href="/auth/register"
+                    className="block px-3 py-2 text-base font-medium bg-blue-600 text-white rounded-md"
+                  >
+                    Sign Up Free
+                  </a>
+                </div>
+              </div>
+            )}
+          </header>
+        );
+      };
+
+      const HeroSection = () => {
+        return (
+          <section className="bg-gradient-to-b from-white to-blue-50 py-16 md:py-24">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="lg:flex lg:items-center lg:justify-between">
+                <div className="lg:w-1/2 mb-8 lg:mb-0">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
+                    Collaborate on PDFs{' '}
+                    <span className="text-blue-600">in real-time</span>
+                  </h1>
+                  <p className="mt-4 text-xl text-gray-600 max-w-2xl">
+                    Edit, annotate, and collaborate on PDF documents with your team.
+                    PDFCollab makes working with PDFs simple and efficient.
+                  </p>
+                  <div className="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <a
+                      href="/auth/register"
+                      className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      Try for free
+                    </a>
+                    <a
+                      href="#how-it-works"
+                      className="inline-flex items-center justify-center px-5 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Watch demo
+                    </a>
+                  </div>
+                  <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="flex items-center">
+                      <span className="text-blue-600 mr-2">✓</span>
+                      <span className="text-gray-600">No installation</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-blue-600 mr-2">✓</span>
+                      <span className="text-gray-600">Real-time editing</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-blue-600 mr-2">✓</span>
+                      <span className="text-gray-600">Free to start</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="lg:w-1/2 relative">
+                  <div className="rounded-lg shadow-xl overflow-hidden bg-white">
+                    <img
+                      src="https://images.unsplash.com/photo-1586282391129-76a6df230234?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+                      alt="PDF collaboration interface"
+                      className="w-full object-cover"
+                    />
+                    <div className="absolute -bottom-6 -right-6 bg-blue-600 rounded-full p-4 shadow-lg">
+                      <span className="text-white text-2xl">📄</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      };
+
+      const FeaturesSection = () => {
+        const features = [
+          {
+            icon: '📝',
+            title: 'PDF Editing',
+            description: 'Edit text, images, and pages in PDFs without the need for specialized software.',
+          },
+          {
+            icon: '👥',
+            title: 'Real-time Collaboration',
+            description: 'Work together with your team simultaneously on the same document.',
+          },
+          {
+            icon: '💬',
+            title: 'Comments & Annotations',
+            description: 'Add notes, highlights, and comments directly on your PDF documents.',
+          },
+          {
+            icon: '✍️',
+            title: 'Digital Signatures',
+            description: 'Sign documents electronically and request signatures from others.',
+          },
+          {
+            icon: '🔒',
+            title: 'Secure Document Sharing',
+            description: 'Control access with password protection and permission settings.',
+          },
+          {
+            icon: '☁️',
+            title: 'Cloud Storage',
+            description: 'Access your PDFs from anywhere, on any device with cloud storage.',
+          },
+        ];
+
+        return (
+          <section id="features" className="py-16 bg-white">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                  Powerful PDF Collaboration Tools
+                </h2>
+                <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+                  Everything you need to work with PDFs in one simple platform
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {features.map((feature, index) => (
+                  <div
+                    key={index}
+                    className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
+                  >
+                    <div className="mb-4 bg-blue-50 p-3 rounded-full inline-block">
+                      <span className="text-2xl">{feature.icon}</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {feature.title}
+                    </h3>
+                    <p className="text-gray-600">{feature.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        );
+      };
+
+      const HowItWorksSection = () => {
+        const steps = [
+          {
+            icon: '📤',
+            title: 'Upload Your PDF',
+            description: 'Upload your PDF document from your computer or cloud storage.',
+          },
+          {
+            icon: '✏️',
+            title: 'Edit & Annotate',
+            description: 'Make changes, add comments, and annotate your document.',
+          },
+          {
+            icon: '🤝',
+            title: 'Collaborate & Share',
+            description: 'Invite team members to collaborate and share the document securely.',
+          },
+        ];
+
+        return (
+          <section id="how-it-works" className="py-16 bg-blue-50">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                  How PDFCollab Works
+                </h2>
+                <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+                  Get started in minutes with our simple three-step process
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {steps.map((step, index) => (
+                  <div key={index} className="relative">
+                    <div className="bg-white p-8 rounded-lg shadow-md text-center h-full">
+                      <div className="mx-auto bg-blue-100 p-4 rounded-full inline-flex items-center justify-center mb-4">
+                        <span className="text-3xl">{step.icon}</span>
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        {step.title}
+                      </h3>
+                      <p className="text-gray-600">{step.description}</p>
+                    </div>
+                    {index < steps.length - 1 && (
+                      <div className="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2">
+                        <span className="text-2xl text-blue-400">→</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-12 text-center">
+                <a
+                  href="/auth/register"
+                  className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Get Started Now
+                </a>
+              </div>
+            </div>
+          </section>
+        );
+      };
+
+      const TestimonialsSection = () => {
+        const testimonials = [
+          {
+            content:
+              'PDFCollab has revolutionized how our team works with documents. The real-time collaboration feature has cut our review time in half.',
+            author: 'Sarah Johnson',
+            role: 'Project Manager, TechCorp',
+            avatar: 'https://randomuser.me/api/portraits/women/32.jpg',
+          },
+          {
+            content:
+              "As a legal firm, we deal with countless documents daily. PDFCollab's annotation and signature features have streamlined our workflow tremendously.",
+            author: 'Michael Chen',
+            role: 'Attorney, Legal Solutions',
+            avatar: 'https://randomuser.me/api/portraits/men/45.jpg',
+          },
+          {
+            content:
+              "The ease of use and powerful features make PDFCollab stand out from other PDF tools. It's become an essential part of our document management system.",
+            author: 'Emily Rodriguez',
+            role: 'Director of Operations, Innovate Inc.',
+            avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
+          },
+        ];
+
+        return (
+          <section id="testimonials" className="py-16 bg-white">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                  What Our Users Say
+                </h2>
+                <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+                  Join thousands of satisfied users who've transformed their PDF workflow
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {testimonials.map((testimonial, index) => (
+                  <div
+                    key={index}
+                    className="bg-gray-50 p-6 rounded-lg border border-gray-200"
+                  >
+                    <div className="flex mb-4">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className="text-yellow-400 text-lg">★</span>
+                      ))}
+                    </div>
+                    <p className="text-gray-600 mb-6 italic">
+                      "{testimonial.content}"
+                    </p>
+                    <div className="flex items-center">
+                      <img
+                        src={testimonial.avatar}
+                        alt={testimonial.author}
+                        className="h-10 w-10 rounded-full mr-3"
+                      />
+                      <div>
+                        <p className="text-gray-900 font-medium">
+                          {testimonial.author}
+                        </p>
+                        <p className="text-gray-500 text-sm">{testimonial.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-12 bg-blue-600 rounded-lg p-8 text-center">
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  Ready to transform your PDF workflow?
+                </h3>
+                <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+                  Join over 10,000 teams who trust PDFCollab for their document
+                  collaboration needs.
+                </p>
+                <a
+                  href="/auth/register"
+                  className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50"
+                >
+                  Start Your Free Trial
+                </a>
+              </div>
+            </div>
+          </section>
+        );
+      };
+
+      const PricingSection = () => {
+        const plans = [
+          {
+            name: 'Free',
+            price: '$0',
+            period: 'forever',
+            description: 'For individuals getting started with PDF collaboration',
+            features: [
+              '5 PDFs per month',
+              'Basic editing tools',
+              'Up to 3 collaborators',
+              '100MB storage',
+              'Email support',
+            ],
+            buttonText: 'Get Started',
+            buttonVariant: 'outlined',
+          },
+          {
+            name: 'Pro',
+            price: '$12',
+            period: 'per user / month',
+            description: 'For professionals who need more power and storage',
+            features: [
+              'Unlimited PDFs',
+              'Advanced editing tools',
+              'Up to 20 collaborators',
+              '10GB storage',
+              'Priority support',
+              'Digital signatures',
+              'Custom branding',
+            ],
+            buttonText: 'Start Free Trial',
+            buttonVariant: 'primary',
+            popular: true,
+          },
+          {
+            name: 'Enterprise',
+            price: 'Custom',
+            period: 'tailored pricing',
+            description: 'For organizations with advanced security needs',
+            features: [
+              'Everything in Pro',
+              'Unlimited collaborators',
+              'Unlimited storage',
+              '24/7 dedicated support',
+              'Advanced security controls',
+              'API access',
+              'SSO integration',
+            ],
+            buttonText: 'Contact Sales',
+            buttonVariant: 'outlined',
+          },
+        ];
+
+        return (
+          <section id="pricing" className="py-16 bg-gray-50">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                  Simple, Transparent Pricing
+                </h2>
+                <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+                  Choose the plan that's right for you and your team
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {plans.map((plan, index) => (
+                  <div
+                    key={index}
+                    className={`bg-white rounded-lg shadow-md overflow-hidden ${plan.popular ? 'ring-2 ring-blue-600 relative' : ''}`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-bl-lg">
+                        Most Popular
+                      </div>
+                    )}
+                    <div className="p-6">
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {plan.name}
+                      </h3>
+                      <div className="mt-4 flex items-baseline">
+                        <span className="text-4xl font-extrabold text-gray-900">
+                          {plan.price}
+                        </span>
+                        <span className="ml-1 text-xl font-semibold text-gray-500">
+                          /{plan.period}
+                        </span>
+                      </div>
+                      <p className="mt-4 text-gray-600">{plan.description}</p>
+                    </div>
+                    <div className="px-6 pb-6">
+                      <ul className="mt-6 space-y-4">
+                        {plan.features.map((feature, featureIndex) => (
+                          <li key={featureIndex} className="flex items-start">
+                            <span className="text-green-500 mr-2">✓</span>
+                            <span className="text-gray-600">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-8">
+                        <a
+                          href="/auth/register"
+                          className={`w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md ${plan.buttonVariant === 'primary' ? 'text-white bg-blue-600 hover:bg-blue-700' : 'text-blue-600 bg-white border-blue-600 hover:bg-blue-50'}`}
+                        >
+                          {plan.buttonText}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-12 text-center">
+                <p className="text-gray-600">
+                  All plans include a 14-day free trial. No credit card required.
+                </p>
+              </div>
+            </div>
+          </section>
+        );
+      };
+
+      const Footer = () => {
+        return (
+          <footer className="bg-gray-800 text-white py-12">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+                <div className="lg:col-span-2">
+                  <div className="text-2xl font-bold mb-4">PDFCollab</div>
+                  <p className="text-gray-400 mb-4 max-w-md">
+                    Simplify your document workflow with our collaborative PDF
+                    solution. Edit, share, and manage PDFs with ease.
+                  </p>
+                  <div className="flex space-x-4">
+                    <a href="#" className="text-gray-400 hover:text-white">
+                      📘 Facebook
+                    </a>
+                    <a href="#" className="text-gray-400 hover:text-white">
+                      🐦 Twitter
+                    </a>
+                    <a href="#" className="text-gray-400 hover:text-white">
+                      💼 LinkedIn
+                    </a>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Product</h3>
+                  <ul className="space-y-2">
+                    <li><a href="#features" className="text-gray-400 hover:text-white">Features</a></li>
+                    <li><a href="#pricing" className="text-gray-400 hover:text-white">Pricing</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-white">Security</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-white">Enterprise</a></li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Resources</h3>
+                  <ul className="space-y-2">
+                    <li><a href="#" className="text-gray-400 hover:text-white">Documentation</a></li>
+                    <li><a href="#how-it-works" className="text-gray-400 hover:text-white">Guides</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-white">API Reference</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-white">Blog</a></li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Company</h3>
+                  <ul className="space-y-2">
+                    <li><a href="#" className="text-gray-400 hover:text-white">About Us</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-white">Careers</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-white">Contact</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-white">Privacy</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div className="mt-12 pt-8 border-t border-gray-700 text-center md:flex md:justify-between md:text-left">
+                <p className="text-gray-400">
+                  © {new Date().getFullYear()} PDFCollab. All rights reserved.
+                </p>
+                <div className="mt-4 md:mt-0">
+                  <a href="#" className="text-gray-400 hover:text-white mr-4">Privacy Policy</a>
+                  <a href="#" className="text-gray-400 hover:text-white mr-4">Terms of Service</a>
+                  <a href="#" className="text-gray-400 hover:text-white">Cookie Policy</a>
+                </div>
+              </div>
+            </div>
+          </footer>
+        );
+      };
+
+      const App = () => {
+        return (
+          <div className="min-h-screen bg-white">
+            <Header />
+            <main>
+              <HeroSection />
+              <FeaturesSection />
+              <HowItWorksSection />
+              <TestimonialsSection />
+              <PricingSection />
+            </main>
+            <Footer />
+          </div>
+        );
+      };
+
+      ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+  </body>
+</html>
