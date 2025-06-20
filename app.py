@@ -103,7 +103,8 @@ def health_check():
     try:
         # Check database connectivity
         if USE_DATABASE and db:
-            db.session.execute('SELECT 1')
+            from sqlalchemy import text
+            db.session.execute(text('SELECT 1'))
             db_status = "connected"
         else:
             db_status = "not_configured"
