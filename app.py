@@ -31,19 +31,17 @@ except ImportError:
     print("Warning: supabase_api module not available")
     supabase_api = None
 
-try:
-    from realtime_routes import realtime_bp, init_socketio
-except ImportError:
-    print("Warning: realtime_routes module not available")
-    realtime_bp = None
-    init_socketio = None
+# Removed SocketIO/realtime functionality for simpler deployment
 
+# Make auth completely optional for deployment
 try:
     from auth import auth_bp, init_oauth
+    AUTH_AVAILABLE = True
 except ImportError:
-    print("Warning: auth module not available")
+    print("Warning: auth module not available - using minimal auth")
     auth_bp = None
     init_oauth = None
+    AUTH_AVAILABLE = False
 
 from email_utils import send_document_completion_email, send_welcome_email, send_document_invitation_email, is_email_configured
 
@@ -135,14 +133,23 @@ def health_check():
         }
         return jsonify(error_data), 503
 
-# Initialize SocketIO for real-time features (optional)
-socketio = init_socketio(app) if init_socketio else None
-
 # Register blueprints (optional)
 if auth_bp:
     app.register_blueprint(auth_bp, url_prefix='/auth')
-if realtime_bp:
-    app.register_blueprint(realtime_bp)
+else:
+    # Minimal auth fallback routes
+    @app.route('/auth/login')
+    def fallback_login():
+        return '''
+        <html>
+        <head><title>Login - PDF Collaborator</title></head>
+        <body style="font-family: Arial; margin: 40px; text-align: center;">
+            <h2>Login</h2>
+            <p>Authentication module not available</p>
+            <a href="/" style="color: #3b82f6;">← Back to Home</a>
+        </body>
+        </html>
+        '''
 
 # Initialize database and PDF processor
 try:

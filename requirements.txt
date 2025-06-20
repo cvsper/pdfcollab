@@ -12,9 +12,6 @@ pdfplumber==0.10.3
 supabase==2.4.0
 PyMuPDF==1.23.14
 python-magic==0.4.27
-flask-socketio==5.3.6
-python-socketio==5.8.0
-eventlet==0.33.3
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
 WTForms==3.1.1
