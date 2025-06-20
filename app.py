@@ -23,9 +23,28 @@ import sys
 from config import Config
 from models import db, Document, DocumentField, User, AuditLog, DocumentStatus, FieldType
 from pdf_processor import PDFProcessor
-from supabase_api import supabase_api
-from realtime_routes import realtime_bp, init_socketio
-from auth import auth_bp, init_oauth
+
+# Optional imports for enhanced features
+try:
+    from supabase_api import supabase_api
+except ImportError:
+    print("Warning: supabase_api module not available")
+    supabase_api = None
+
+try:
+    from realtime_routes import realtime_bp, init_socketio
+except ImportError:
+    print("Warning: realtime_routes module not available")
+    realtime_bp = None
+    init_socketio = None
+
+try:
+    from auth import auth_bp, init_oauth
+except ImportError:
+    print("Warning: auth module not available")
+    auth_bp = None
+    init_oauth = None
+
 from email_utils import send_document_completion_email, send_welcome_email, send_document_invitation_email, is_email_configured
 
 load_dotenv()
@@ -60,12 +79,12 @@ else:
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'auth.login'
+login_manager.login_view = 'auth.login' if auth_bp else None
 login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'info'
 
-# Initialize OAuth
-oauth = init_oauth(app)
+# Initialize OAuth (optional)
+oauth = init_oauth(app) if init_oauth else None
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -77,7 +96,7 @@ def public_home():
     """Public landing page for unauthenticated users"""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
-    return redirect(url_for('auth.login'))
+    return redirect(url_for('auth.login') if auth_bp else '/')
 
 # Health check endpoint for monitoring
 @app.route('/health')
@@ -116,12 +135,14 @@ def health_check():
         }
         return jsonify(error_data), 503
 
-# Initialize SocketIO for real-time features
-socketio = init_socketio(app)
+# Initialize SocketIO for real-time features (optional)
+socketio = init_socketio(app) if init_socketio else None
 
-# Register blueprints
-app.register_blueprint(auth_bp, url_prefix='/auth')
-app.register_blueprint(realtime_bp)
+# Register blueprints (optional)
+if auth_bp:
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+if realtime_bp:
+    app.register_blueprint(realtime_bp)
 
 # Initialize database and PDF processor
 try:
@@ -135,7 +156,7 @@ try:
         print(f"📊 Database URL: {Config.get_database_url()}")
         
         # Check Supabase API availability
-        if supabase_api.is_available():
+        if supabase_api and supabase_api.is_available():
             print("📡 Supabase API client ready for advanced features")
         else:
             print("⚠️  Supabase API not available (using database only)")
