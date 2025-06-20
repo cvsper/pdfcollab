@@ -2032,8 +2032,7 @@ if __name__ == '__main__':
     print("🚀 PDF Collaborator Flask App Starting...")
     print("📊 Using database with real-time features")
     print("🌐 Access at: http://localhost:5006")
-    print("⚡ Real-time editor at: http://localhost:5006/realtime-editor")
-    print("📡 WebSocket support enabled")
+    print("🚀 PDF Collaborator running at: http://localhost:5006")
     
-    # Use SocketIO to run the app for real-time features
-    socketio.run(app, debug=True, port=5006, host='0.0.0.0')
+    # Use standard Flask development server
+    app.run(debug=True, port=5006, host='0.0.0.0')
