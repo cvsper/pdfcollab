@@ -16,6 +16,8 @@ from PIL import Image
 import json
 import base64
 from io import BytesIO
+import logging
+import sys
 
 # Import new modules
 from config import Config
@@ -30,6 +32,30 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Configure logging for production
+if Config.is_production():
+    # Production logging configuration
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler('app.log')
+        ]
+    )
+    
+    # Set specific log levels
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+    
+    # Application logger
+    app.logger.setLevel(logging.INFO)
+    app.logger.info("PDF Collaborator starting in production mode")
+else:
+    # Development logging
+    logging.basicConfig(level=logging.DEBUG)
+    app.logger.info("PDF Collaborator starting in development mode")
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -52,6 +78,43 @@ def public_home():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     return redirect(url_for('auth.login'))
+
+# Health check endpoint for monitoring
+@app.route('/health')
+def health_check():
+    """Health check endpoint for load balancers and monitoring"""
+    try:
+        # Check database connectivity
+        if USE_DATABASE and db:
+            db.session.execute('SELECT 1')
+            db_status = "connected"
+        else:
+            db_status = "not_configured"
+        
+        # Check email service configuration
+        email_configured = is_email_configured()
+        
+        health_data = {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "version": "1.0.0",
+            "environment": os.getenv('FLASK_ENV', 'development'),
+            "services": {
+                "database": db_status,
+                "email": "configured" if email_configured else "not_configured"
+            }
+        }
+        
+        return jsonify(health_data), 200
+        
+    except Exception as e:
+        error_data = {
+            "status": "unhealthy",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e),
+            "environment": os.getenv('FLASK_ENV', 'development')
+        }
+        return jsonify(error_data), 503
 
 # Initialize SocketIO for real-time features
 socketio = init_socketio(app)
@@ -103,6 +166,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Mock data for development (matching your React wireframe data)
+# In production, set FLASK_ENV=production to disable mock data
 MOCK_DOCUMENTS = [
     {
         'id': '1',
@@ -223,6 +287,9 @@ MOCK_DOCUMENTS = [
 
 def get_documents(user_id=None):
     """Get documents from database or mock data, optionally filtered by user"""
+    # In production, disable mock data entirely
+    is_production = os.getenv('FLASK_ENV') == 'production'
+    
     if USE_DATABASE and db:
         try:
             # Query documents from the database
@@ -233,6 +300,11 @@ def get_documents(user_id=None):
             # Convert to dictionary format for template compatibility
             db_documents = [doc.to_dict() for doc in documents] if documents else []
             
+            # In production, only use database documents
+            if is_production:
+                return db_documents
+            
+            # In development, combine with mock documents
             # Filter mock documents by user if specified
             if user_id:
                 user_mock_documents = [doc for doc in MOCK_DOCUMENTS if doc.get('created_by') == user_id]
@@ -240,18 +312,24 @@ def get_documents(user_id=None):
                 user_mock_documents = MOCK_DOCUMENTS
             
             # Combine database documents with mock documents
-            # Mock documents are used for real-time workflow, DB for persistent storage
             all_documents = user_mock_documents + db_documents
             return all_documents if all_documents else user_mock_documents
         except Exception as e:
             print(f"Database error: get_all_documents")
             print(f"Error details: {e}")
-            # Filter mock documents by user if specified
+            # In production, return empty list if database fails
+            if is_production:
+                return []
+            # In development, fallback to mock data
             if user_id:
                 return [doc for doc in MOCK_DOCUMENTS if doc.get('created_by') == user_id]
             return MOCK_DOCUMENTS
     
-    # Filter mock documents by user if specified
+    # In production without database, return empty (should not happen)
+    if is_production:
+        return []
+    
+    # Development fallback to mock data
     if user_id:
         return [doc for doc in MOCK_DOCUMENTS if doc.get('created_by') == user_id]
     return MOCK_DOCUMENTS

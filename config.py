@@ -9,7 +9,14 @@ class Config:
     
     # Flask configuration
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production')
-    DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    FLASK_ENV = os.getenv('FLASK_ENV', 'development')
+    DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true' and FLASK_ENV != 'production'
+    
+    # Production Security Settings
+    if FLASK_ENV == 'production':
+        PREFERRED_URL_SCHEME = 'https'
+        SESSION_COOKIE_SECURE = True
+        WTF_CSRF_SSL_STRICT = True
     
     # Authentication configuration
     WTF_CSRF_ENABLED = True
@@ -74,3 +81,8 @@ class Config:
                 user_part = parts[0].split(':')[0]  # Remove password
                 return f"postgresql://{user_part}:***@{parts[1]}"
         return cls.SQLALCHEMY_DATABASE_URI
+    
+    @classmethod
+    def is_production(cls):
+        """Check if running in production environment"""
+        return cls.FLASK_ENV == 'production'
