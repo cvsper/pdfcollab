@@ -1,97 +1,254 @@
-{% extends "base.html" %}
-
-{% block title %}Dashboard - PDF Collaborator{% endblock %}
-
-{% block content %}
-<!-- Dashboard Page - Matching React Dashboard component -->
-<div class="space-y-8">
-    <!-- Header with Start New Button -->
-    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
-        <h2 class="text-2xl font-bold text-gray-900">Document Dashboard</h2>
-        <a href="{{ url_for('start_workflow') }}" 
-           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-            </svg>
-            Start New PDF Workflow
-        </a>
-    </div>
-
-    <!-- Document List - Matching React DocumentList component -->
-    <div class="bg-white shadow overflow-hidden sm:rounded-md">
-        <div class="px-4 py-5 border-b border-gray-200">
-            <h3 class="text-lg font-medium leading-6 text-gray-900">Your Documents</h3>
-            <p class="mt-1 text-sm text-gray-500">View and manage your document workflows</p>
-        </div>
-        
-        {% if documents %}
-        <ul class="divide-y divide-gray-200">
-            {% for doc in documents %}
-            <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
-                <button class="w-full text-left" onclick="selectDocument('{{ doc.id }}', '{{ doc.status }}')">
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm font-medium text-blue-600 truncate">{{ doc.name }}</p>
-                        <div class="ml-2 flex-shrink-0 flex">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                       {% if doc.status == 'Awaiting User 1' %}bg-yellow-100 text-yellow-800
-                                       {% elif doc.status == 'Awaiting User 2' %}bg-blue-100 text-blue-800  
-                                       {% elif doc.status == 'Signed & Sent' %}bg-green-100 text-green-800
-                                       {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ doc.status }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PDF Collaborator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation Header -->
+    <header class="bg-white shadow-sm w-full">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">PDF Collaborator</h1>
+                </div>
+                <!-- User profile and authentication -->
+                <div class="flex items-center space-x-4">
+                    {% if current_user.is_authenticated %}
+                        <div class="flex items-center space-x-3">
+                            {% if current_user.avatar_url %}
+                                <img src="{{ current_user.avatar_url }}" alt="Profile" class="h-8 w-8 rounded-full">
+                            {% else %}
+                                <span class="bg-blue-500 text-white rounded-full h-8 w-8 flex items-center justify-center">
+                                    <span class="text-sm font-bold">{{ current_user.username[0].upper() }}</span>
+                                </span>
+                            {% endif %}
+                            <div class="hidden sm:block">
+                                <div class="text-sm font-medium text-gray-900">{{ current_user.username }}</div>
+                                <div class="text-xs text-gray-500">{{ current_user.email }}</div>
+                            </div>
+                            <div class="relative">
+                                <button type="button" class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" id="user-menu-button" onclick="toggleUserMenu()">
+                                    <span class="sr-only">Open user menu</span>
+                                    <i class="fas fa-chevron-down text-gray-400"></i>
+                                </button>
+                                <div id="user-menu" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                                    <a href="{{ url_for('dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
+                                    <a href="{{ url_for('auth.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile Settings</a>
+                                    <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="flex items-center space-x-3">
+                            <a href="{{ url_for('auth.login') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Sign in</a>
+                            <a href="{{ url_for('auth.register') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">Sign up</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- Workflow steps -->
+            <nav aria-label="Progress" class="py-4">
+                <ol class="flex items-center justify-between w-full">
+                    <!-- Step 1: Dashboard (Active) -->
+                    <li class="relative pr-8 sm:pr-20">
+                        <div class="relative flex items-center justify-center cursor-pointer">
+                            <span class="h-9 flex items-center">
+                                <span class="relative z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white border-2 border-blue-600">
+                                    <span class="text-sm text-blue-600">1</span>
+                                </span>
                             </span>
+                            <span class="hidden sm:block ml-2 text-sm font-medium text-gray-900">Dashboard</span>
                         </div>
-                    </div>
-                    <div class="mt-2 sm:flex sm:justify-between">
-                        <div class="sm:flex">
-                            <p class="flex items-center text-sm text-gray-500">
-                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
-                                </svg>
-                                PDF Document
-                            </p>
+                        <span class="hidden sm:block text-sm text-gray-500">View and manage documents</span>
+                    </li>
+                    
+                    <!-- Step 2: User 1 -->
+                    <li class="relative pl-8 sm:pl-20 pr-8 sm:pr-20">
+                        <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                            <div class="h-0.5 w-full bg-gray-200"></div>
                         </div>
-                        <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                            </svg>
-                            <p>Updated <time>{{ doc.lastUpdated }}</time></p>
+                        <div class="relative flex items-center justify-center cursor-not-allowed">
+                            <span class="h-9 flex items-center">
+                                <span class="relative z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200">
+                                    <span class="text-sm text-gray-500">2</span>
+                                </span>
+                            </span>
+                            <span class="hidden sm:block ml-2 text-sm font-medium text-gray-900">User 1</span>
                         </div>
-                    </div>
-                </button>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <div class="px-4 py-6 text-center text-gray-500">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No documents</h3>
-            <p class="mt-1 text-sm text-gray-500">Get started by creating a new document workflow.</p>
-            <div class="mt-6">
-                <a href="{{ url_for('start_workflow') }}" 
-                   class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                        <span class="hidden sm:block text-sm text-gray-500">Upload and begin form</span>
+                    </li>
+                    
+                    <!-- Step 3: User 2 -->
+                    <li class="relative pl-8 sm:pl-20 pr-8 sm:pr-20">
+                        <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                            <div class="h-0.5 w-full bg-gray-200"></div>
+                        </div>
+                        <div class="relative flex items-center justify-center cursor-not-allowed">
+                            <span class="h-9 flex items-center">
+                                <span class="relative z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200">
+                                    <span class="text-sm text-gray-500">3</span>
+                                </span>
+                            </span>
+                            <span class="hidden sm:block ml-2 text-sm font-medium text-gray-900">User 2</span>
+                        </div>
+                        <span class="hidden sm:block text-sm text-gray-500">Complete and sign</span>
+                    </li>
+                    
+                    <!-- Step 4: Complete -->
+                    <li class="relative pl-8 sm:pl-20">
+                        <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                            <div class="h-0.5 w-full bg-gray-200"></div>
+                        </div>
+                        <div class="relative flex items-center justify-center cursor-not-allowed">
+                            <span class="h-9 flex items-center">
+                                <span class="relative z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200">
+                                    <span class="text-sm text-gray-500">4</span>
+                                </span>
+                            </span>
+                            <span class="hidden sm:block ml-2 text-sm font-medium text-gray-900">Complete</span>
+                        </div>
+                        <span class="hidden sm:block text-sm text-gray-500">Document finalized</span>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6">
+                    {% for category, message in messages %}
+                        <div class="mb-3 p-4 rounded-lg border {% if category == 'success' %}bg-green-50 border-green-200 text-green-800{% elif category == 'error' %}bg-red-50 border-red-200 text-red-800{% elif category == 'warning' %}bg-yellow-50 border-yellow-200 text-yellow-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="space-y-8">
+            <!-- Dashboard Header -->
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
+                <h2 class="text-2xl font-bold text-gray-900">Document Dashboard</h2>
+                <a href="/user1" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    New Document
+                    Start New PDF Workflow
                 </a>
             </div>
+            
+            <!-- Documents Section -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <div class="px-4 py-5 border-b border-gray-200">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900">Your Documents</h3>
+                    <p class="mt-1 text-sm text-gray-500">View and manage your document workflows</p>
+                </div>
+                
+                <!-- Document List -->
+                <ul class="divide-y divide-gray-200">
+                    {% if documents %}
+                        {% for document in documents %}
+                            <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                                <div class="w-full text-left">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-medium text-blue-600 truncate">
+                                            {% if document.status == 'Signed & Sent' %}
+                                                <a href="{{ url_for('completion_page', document_id=document.id) }}" class="hover:underline">
+                                                    {{ document.user1_data.name if document.user1_data and document.user1_data.name else 'User 2' }}
+                                                </a>
+                                            {% else %}
+                                                <a href="{{ url_for('user2_interface', document_id=document.id) }}" class="hover:underline">
+                                                    {{ document.user1_data.name if document.user1_data and document.user1_data.name else 'User 2' }}
+                                                </a>
+                                            {% endif %}
+                                        </p>
+                                        <div class="ml-2 flex-shrink-0 flex items-center space-x-2">
+                                            <!-- Invitation Button -->
+                                            {% if document.status == 'Pending User 2' and document.user1_data and document.user1_data.user2_email %}
+                                                <form method="POST" action="{{ url_for('send_invitation', document_id=document.id) }}" class="inline">
+                                                    <button type="submit" 
+                                                            class="px-2 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded"
+                                                            onclick="return confirm('Send invitation email to {{ document.user1_data.user2_email }}?')">
+                                                        Send Invite
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            
+                                            <!-- Status Badge -->
+                                            {% if document.status == 'Pending User 2' or document.status == 'Awaiting User 2' %}
+                                                <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                    Awaiting User 2
+                                                </p>
+                                            {% elif document.status == 'Signed & Sent' %}
+                                                <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                    Signed & Sent
+                                                </p>
+                                            {% else %}
+                                                <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                    Awaiting User 1
+                                                </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 sm:flex sm:justify-between">
+                                        <div class="sm:flex">
+                                            <p class="flex items-center text-sm text-gray-500">
+                                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                                                </svg>
+                                                PDF Document
+                                            </p>
+                                        </div>
+                                        <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                            </svg>
+                                            <p>Updated <time>{{ document.lastUpdated or 'recently' }}</time></p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Invitation Status -->
+                                    {% if document.invitation_sent %}
+                                        <div class="mt-2 text-xs text-green-600">
+                                            ✓ Invitation sent{% if document.invitation_sent_at %} on {{ document.invitation_sent_at }}{% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="px-4 py-6 text-center text-gray-500">
+                            No documents found. Start a new workflow to create one.
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
-        {% endif %}
     </div>
-</div>
 
-<script>
-function selectDocument(docId, status) {
-    // Navigate based on document status
-    if (status === 'Awaiting User 1') {
-        window.location.href = "{{ url_for('user1_interface') }}";
-    } else if (status === 'Awaiting User 2') {
-        window.location.href = "/user2/" + docId;
-    } else if (status === 'Signed & Sent') {
-        window.location.href = "/complete/" + docId;
-    }
-}
-</script>
-{% endblock %}
+    <script>
+        // User menu toggle
+        function toggleUserMenu() {
+            const menu = document.getElementById('user-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Close user menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('user-menu');
+            const button = document.getElementById('user-menu-button');
+            if (menu && !menu.contains(event.target) && !button.contains(event.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

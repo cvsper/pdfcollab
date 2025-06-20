@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ error_title or 'Error' }} - PDF Collaborator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full bg-white shadow-lg rounded-lg p-6 text-center">
+        <!-- Error Icon -->
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+            <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+        </div>
+        
+        <!-- Error Title -->
+        <h1 class="text-lg font-semibold text-gray-900 mb-2">
+            {{ error_title or 'An Error Occurred' }}
+        </h1>
+        
+        <!-- Error Message -->
+        <p class="text-sm text-gray-600 mb-6">
+            {{ error_message or 'Something went wrong. Please try again later.' }}
+        </p>
+        
+        <!-- Actions -->
+        <div class="space-y-3">
+            <button onclick="history.back()" 
+                    class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Go Back
+            </button>
+            <p class="text-xs text-gray-500">
+                If you continue to experience issues, please contact support.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

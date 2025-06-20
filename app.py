@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
+from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 from werkzeug.utils import secure_filename
 import os
 from dotenv import load_dotenv
@@ -17,25 +18,69 @@ import base64
 from io import BytesIO
 
 # Import new modules
-from supabase_client import SupabaseManager
+from config import Config
+from models import db, Document, DocumentField, User, AuditLog, DocumentStatus, FieldType
 from pdf_processor import PDFProcessor
+from supabase_api import supabase_api
+from realtime_routes import realtime_bp, init_socketio
+from auth import auth_bp, init_oauth
+from email_utils import send_document_completion_email, send_welcome_email, send_document_invitation_email, is_email_configured
 
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-change-in-production')
+app.config.from_object(Config)
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
+login_manager.login_message = 'Please log in to access this page.'
+login_manager.login_message_category = 'info'
+
+# Initialize OAuth
+oauth = init_oauth(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
+
+# Add public route for unauthenticated users
+@app.route('/public')
+def public_home():
+    """Public landing page for unauthenticated users"""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('auth.login'))
+
+# Initialize SocketIO for real-time features
+socketio = init_socketio(app)
+
+# Register blueprints
+app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(realtime_bp)
 
 # Initialize database and PDF processor
 try:
-    db = SupabaseManager()
+    db.init_app(app)
     pdf_processor = PDFProcessor()
+    
+    with app.app_context():
+        # Create tables if they don't exist
+        db.create_all()
+        print("✅ Connected to Supabase database with SQLAlchemy")
+        print(f"📊 Database URL: {Config.get_database_url()}")
+        
+        # Check Supabase API availability
+        if supabase_api.is_available():
+            print("📡 Supabase API client ready for advanced features")
+        else:
+            print("⚠️  Supabase API not available (using database only)")
+    
     USE_DATABASE = True
-    print("✅ Connected to Supabase database")
 except Exception as e:
     print(f"⚠️  Database connection failed: {e}")
-    print("🔄 Falling back to mock data")
-    db = None
-    pdf_processor = PDFProcessor()
+    print("🔄 Falling back to in-memory storage")
     USE_DATABASE = False
 
 # File upload configuration
@@ -65,6 +110,7 @@ MOCK_DOCUMENTS = [
         'status': 'Awaiting User 2',
         'lastUpdated': '2 hours ago',
         'created_at': datetime.now().isoformat(),
+        'created_by': None,  # No owner - won't appear for any user
         'user1_data': {'name': 'John Doe', 'email': 'john@example.com'}
     },
     {
@@ -74,6 +120,7 @@ MOCK_DOCUMENTS = [
         'lastUpdated': '1 day ago',
         'created_at': datetime.now().isoformat(),
         'completed_at': datetime.now().isoformat(),
+        'created_by': None,  # No owner - won't appear for any user
         'user1_data': {'name': 'Alice Smith', 'email': 'alice@example.com'},
         'user2_data': {'name': 'Bob Johnson', 'email': 'bob@example.com'}
     },
@@ -82,7 +129,8 @@ MOCK_DOCUMENTS = [
         'name': 'Insurance Form', 
         'status': 'Awaiting User 1',
         'lastUpdated': '3 days ago',
-        'created_at': datetime.now().isoformat()
+        'created_at': datetime.now().isoformat(),
+        'created_by': None  # No owner - won't appear for any user
     },
     {
         'id': 'working_example',
@@ -91,6 +139,7 @@ MOCK_DOCUMENTS = [
         'lastUpdated': 'Just created',
         'created_at': datetime.now().isoformat(),
         'completed_at': datetime.now().isoformat(),
+        'created_by': None,  # No owner - won't appear for any user
         'user1_data': {
             'name': 'John Test User',
             'email': 'john@test.com',
@@ -172,25 +221,69 @@ MOCK_DOCUMENTS = [
     }
 ]
 
-def get_documents():
-    """Get documents from database or mock data"""
+def get_documents(user_id=None):
+    """Get documents from database or mock data, optionally filtered by user"""
     if USE_DATABASE and db:
         try:
-            return db.get_all_documents()
+            # Query documents from the database
+            if user_id:
+                documents = Document.query.filter_by(created_by=user_id).all()
+            else:
+                documents = Document.query.all()
+            # Convert to dictionary format for template compatibility
+            db_documents = [doc.to_dict() for doc in documents] if documents else []
+            
+            # Filter mock documents by user if specified
+            if user_id:
+                user_mock_documents = [doc for doc in MOCK_DOCUMENTS if doc.get('created_by') == user_id]
+            else:
+                user_mock_documents = MOCK_DOCUMENTS
+            
+            # Combine database documents with mock documents
+            # Mock documents are used for real-time workflow, DB for persistent storage
+            all_documents = user_mock_documents + db_documents
+            return all_documents if all_documents else user_mock_documents
         except Exception as e:
-            print(f"Database error: {e}")
+            print(f"Database error: get_all_documents")
+            print(f"Error details: {e}")
+            # Filter mock documents by user if specified
+            if user_id:
+                return [doc for doc in MOCK_DOCUMENTS if doc.get('created_by') == user_id]
             return MOCK_DOCUMENTS
+    
+    # Filter mock documents by user if specified
+    if user_id:
+        return [doc for doc in MOCK_DOCUMENTS if doc.get('created_by') == user_id]
     return MOCK_DOCUMENTS
 
 def get_document_by_id(document_id):
     """Get single document by ID"""
     if USE_DATABASE and db:
         try:
-            return db.get_document(document_id)
+            # Query document from the database
+            document = Document.query.filter_by(id=document_id).first()
+            return document.to_dict() if document else next((doc for doc in MOCK_DOCUMENTS if doc['id'] == document_id), None)
         except Exception as e:
-            print(f"Database error: {e}")
+            print(f"Database error: get_document")
+            print(f"Error details: {e}")
             return next((doc for doc in MOCK_DOCUMENTS if doc['id'] == document_id), None)
     return next((doc for doc in MOCK_DOCUMENTS if doc['id'] == document_id), None)
+
+def check_document_access(document_id, user_id=None):
+    """Check if user has access to document (either owns it or is User 2)"""
+    document = get_document_by_id(document_id)
+    if not document:
+        return False, None
+    
+    # Allow access if:
+    # 1. User is the creator (for authenticated users)
+    # 2. User is unauthenticated (User 2 access)
+    if user_id is None:  # Unauthenticated user (User 2)
+        return True, document
+    elif document.get('created_by') == user_id:  # Document owner
+        return True, document
+    else:
+        return False, None
 
 def extract_pdf_fields(pdf_path):
     """Enhanced PDF field extraction using PyMuPDF for better accuracy"""
@@ -616,10 +709,10 @@ def generate_completed_pdf(document):
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
         print(f"📁 Output path: {output_path}")
         
-        # Try PyMuPDF first for better accuracy
-        print("🔧 Attempting to fill original PDF with PyMuPDF...")
-        if pdf_processor.fill_pdf_with_pymupdf(document['file_path'], document, output_path):
-            print(f"✅ Successfully filled original PDF with PyMuPDF: {output_path}")
+        # Try Force Visible method first for guaranteed visibility
+        print("🔧 Attempting to fill original PDF with FORCE VISIBLE method...")
+        if pdf_processor.fill_pdf_with_force_visible(document['file_path'], document, output_path):
+            print(f"✅ Successfully filled original PDF with FORCE VISIBLE method: {output_path}")
             return output_path
         
         # Fallback to advanced filling
@@ -929,17 +1022,25 @@ def fill_pdf_fields(pdf_path, field_data, output_path):
     return fill_pdf_fields_advanced(pdf_path, {'pdf_fields': [], 'user1_data': field_data, 'user2_data': {}}, output_path)
 
 @app.route('/')
+def index():
+    """Landing page - React app for marketing site"""
+    return render_template('index.html')
+
+@app.route('/dashboard')
+@login_required
 def dashboard():
-    """Home/Dashboard page - matches your React Dashboard component"""
-    documents = get_documents()
+    """Dashboard page for authenticated users"""
+    documents = get_documents(user_id=current_user.id)
     return render_template('dashboard.html', documents=documents)
 
 @app.route('/start-workflow')
+@login_required
 def start_workflow():
     """Start new PDF workflow"""
     return redirect(url_for('user1_interface'))
 
 @app.route('/user1', methods=['GET', 'POST'])
+@login_required
 def user1_interface():
     """User 1 interface - matches your React UserOneInterface component"""
     if request.method == 'POST':
@@ -960,8 +1061,9 @@ def user1_interface():
             
             # Get form data from User 1
             user1_data = {
-                'name': request.form.get('user1_name', ''),
-                'email': request.form.get('user1_email', ''),
+                'name': request.form.get('user2_name', ''),  # Now collecting User 2's name
+                'email': request.form.get('user2_email', ''), # Now collecting User 2's email
+                'user2_email': request.form.get('user2_email', ''),  # User 2's email for invitations
                 'employee_id': request.form.get('employee_id', ''),
                 'department': request.form.get('department', ''),
                 'position': request.form.get('position', ''),
@@ -1024,9 +1126,10 @@ def user1_interface():
             new_document = {
                 'id': document_id,
                 'name': filename,
-                'status': 'Awaiting User 2',
+                'status': 'Pending User 2',
                 'lastUpdated': 'Just now',
                 'created_at': datetime.now().isoformat(),
+                'created_by': current_user.id if current_user.is_authenticated else None,
                 'user1_data': user1_data,
                 'file_path': file_path,
                 'pdf_fields': pdf_analysis['fields'],
@@ -1052,19 +1155,116 @@ def user1_interface():
             
             MOCK_DOCUMENTS.append(new_document)
             
-            flash('Document uploaded and sent to User 2!', 'success')
+            # Send invitation email to User 2 immediately
+            user2_email = user1_data.get('user2_email')
+            if user2_email and is_email_configured():
+                try:
+                    # Generate invitation URL
+                    invitation_url = url_for('user2_interface', document_id=document_id, _external=True)
+                    
+                    # Send invitation email
+                    success = send_document_invitation_email(
+                        document_data=new_document,
+                        recipient_email=user2_email,
+                        sender_name=user1_data.get('name', 'User 1'),
+                        invitation_url=invitation_url
+                    )
+                    
+                    if success:
+                        # Update document to mark invitation as sent
+                        new_document['invitation_sent'] = True
+                        new_document['invitation_sent_at'] = datetime.now().isoformat()
+                        flash(f'Document uploaded and invitation sent to {user2_email}!', 'success')
+                    else:
+                        flash('Document uploaded but failed to send invitation email.', 'warning')
+                        
+                except Exception as e:
+                    print(f"Error sending invitation email: {e}")
+                    flash('Document uploaded but failed to send invitation email.', 'warning')
+            else:
+                if not user2_email:
+                    flash('Document uploaded but no email address provided for User 2.', 'warning')
+                else:
+                    flash('Document uploaded but email service not configured.', 'warning')
+            
             return redirect(url_for('dashboard'))
         else:
             flash('Invalid file type. Please upload a PDF file.', 'error')
     
     return render_template('user1_enhanced.html')
 
+@app.route('/send-invitation/<document_id>', methods=['POST'])
+@login_required
+def send_invitation(document_id):
+    """Send email invitation to User 2 to complete document"""
+    has_access, document = check_document_access(document_id, current_user.id)
+    
+    if not has_access:
+        flash('Document not found or access denied.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Check if user is the document owner
+    if document.get('status') == 'Signed & Sent':
+        flash('This document has already been completed.', 'info')
+        return redirect(url_for('dashboard'))
+    
+    # Get the User 2 email from the document
+    user2_email = document.get('user1_data', {}).get('user2_email')
+    if not user2_email:
+        flash('No recipient email address found. Please check the document configuration.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Check if email is configured
+    if not is_email_configured():
+        flash('Email service is not configured. Cannot send invitation.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Get sender information
+        sender_name = document.get('user1_data', {}).get('name', 'PDFCollab User')
+        
+        # Generate invitation URL
+        invitation_url = url_for('user2_interface', document_id=document_id, _external=True)
+        
+        # Send invitation email
+        success = send_document_invitation_email(
+            document_data=document,
+            recipient_email=user2_email,
+            sender_name=sender_name,
+            invitation_url=invitation_url
+        )
+        
+        if success:
+            flash(f'Invitation email sent successfully to {user2_email}!', 'success')
+            
+            # Update document to mark invitation as sent
+            for doc in MOCK_DOCUMENTS:
+                if doc['id'] == document_id:
+                    doc['invitation_sent'] = True
+                    doc['invitation_sent_at'] = datetime.now().isoformat()
+                    break
+        else:
+            flash(f'Failed to send invitation email to {user2_email}. Please try again.', 'error')
+            
+    except Exception as e:
+        app.logger.error(f"Failed to send invitation: {e}")
+        flash('Failed to send invitation email. Please try again.', 'error')
+    
+    return redirect(url_for('dashboard'))
+
 @app.route('/user2/<document_id>', methods=['GET', 'POST'])
 def user2_interface(document_id):
     """User 2 interface - matches your React UserTwoInterface component"""
-    document = get_document_by_id(document_id)
-    if not document:
-        flash('Document not found', 'error')
+    user_id = current_user.id if current_user.is_authenticated else None
+    has_access, document = check_document_access(document_id, user_id)
+    
+    if not has_access:
+        # For unauthenticated users (User 2), show a simple error page instead of redirecting to dashboard
+        if not current_user.is_authenticated:
+            return render_template('error.html', 
+                                 error_title='Document Not Found',
+                                 error_message='The requested document could not be found or may have been removed.')
+        flash('Document not found or access denied.', 'error')
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
@@ -1135,6 +1335,7 @@ def user2_interface(document_id):
                     supporting_docs.append({'filename': filename, 'path': support_path})
         
         # Update document
+        updated_document = None
         for doc in MOCK_DOCUMENTS:
             if doc['id'] == document_id:
                 doc.update({
@@ -1144,7 +1345,54 @@ def user2_interface(document_id):
                     'completed_at': datetime.now().isoformat(),
                     'lastUpdated': 'Just now'
                 })
+                updated_document = doc
                 break
+        
+        # Send email notifications if document was updated
+        if updated_document and is_email_configured():
+            try:
+                # Get email addresses from the document data
+                user1_email = updated_document.get('user1_data', {}).get('email')
+                user2_email = user2_data.get('email')
+                
+                # Debug logging
+                app.logger.info(f"Email sending debug - User1 email: {user1_email}, User2 email: {user2_email}")
+                print(f"🐛 DEBUG: User1 email: {user1_email}, User2 email: {user2_email}")
+                
+                email_sent = False
+                
+                # Send email to user1 (document owner)
+                if user1_email:
+                    success1 = send_document_completion_email(updated_document, user1_email)
+                    if success1:
+                        flash(f'Email notification sent to {user1_email}', 'success')
+                        email_sent = True
+                    else:
+                        flash(f'Failed to send email to {user1_email}', 'error')
+                else:
+                    flash('No email address found for document owner', 'warning')
+                
+                # Send email to user2 (signer)
+                if user2_email:
+                    success2 = send_document_completion_email(updated_document, user2_email)
+                    if success2:
+                        flash(f'Email notification sent to {user2_email}', 'success')
+                        email_sent = True
+                    else:
+                        flash(f'Failed to send email to {user2_email}', 'error')
+                else:
+                    flash('No email address found for document signer', 'warning')
+                
+                if not email_sent:
+                    flash('No emails were sent - no valid email addresses found', 'warning')
+                    
+            except Exception as e:
+                app.logger.error(f"Failed to send email notifications: {e}")
+                flash('Document completed successfully, but email notifications failed to send.', 'warning')
+        elif not is_email_configured():
+            flash('Document completed successfully. Email notifications are not configured.', 'info')
+        else:
+            flash('Document completed successfully. No email configuration found.', 'info')
         
         return redirect(url_for('completion_page', document_id=document_id))
     
@@ -1153,9 +1401,16 @@ def user2_interface(document_id):
 @app.route('/complete/<document_id>')
 def completion_page(document_id):
     """Completion page - matches your React CompletionPage component"""
-    document = get_document_by_id(document_id)
-    if not document:
-        flash('Document not found', 'error')
+    user_id = current_user.id if current_user.is_authenticated else None
+    has_access, document = check_document_access(document_id, user_id)
+    
+    if not has_access:
+        # For unauthenticated users (User 2), show a simple error page instead of redirecting to dashboard
+        if not current_user.is_authenticated:
+            return render_template('error.html', 
+                                 error_title='Document Not Found',
+                                 error_message='The requested document could not be found or may have been removed.')
+        flash('Document not found or access denied.', 'error')
         return redirect(url_for('dashboard'))
     
     return render_template('completion.html', document=document)
@@ -1165,10 +1420,16 @@ def download_document(document_id):
     """Download completed PDF document"""
     print(f"🔽 Download request for document: {document_id}")
     
-    document = get_document_by_id(document_id)
-    if not document:
-        print(f"❌ Document not found: {document_id}")
-        flash('Document not found', 'error')
+    user_id = current_user.id if current_user.is_authenticated else None
+    has_access, document = check_document_access(document_id, user_id)
+    
+    if not has_access:
+        print(f"❌ Document not found or access denied: {document_id}")
+        if not current_user.is_authenticated:
+            return render_template('error.html', 
+                                 error_title='Document Not Found',
+                                 error_message='The requested document could not be found or may have been removed.')
+        flash('Document not found or access denied.', 'error')
         return redirect(url_for('dashboard'))
     
     print(f"📋 Document found: {document.get('name', 'unknown')}")
@@ -1199,12 +1460,28 @@ def download_document(document_id):
             print(f"✅ PDF generated successfully: {output_path} ({file_size} bytes)")
             
             # Validate PDF before sending
-            with open(output_path, 'rb') as f:
-                header = f.read(10)
-                if not header.startswith(b'%PDF'):
-                    print(f"❌ Invalid PDF header: {header}")
-                    flash('Generated PDF appears to be corrupted. Please try again.', 'error')
-                    return redirect(url_for('completion_page', document_id=document_id))
+            try:
+                with open(output_path, 'rb') as f:
+                    header = f.read(10)
+                    if not header.startswith(b'%PDF'):
+                        print(f"❌ Invalid PDF header: {header}")
+                        flash('Generated PDF appears to be corrupted. Please try again.', 'error')
+                        return redirect(url_for('completion_page', document_id=document_id))
+                    
+                    # Check if file is readable and has content
+                    f.seek(0, 2)  # Go to end of file
+                    actual_size = f.tell()
+                    print(f"📄 PDF validation: Header OK, actual file size: {actual_size} bytes")
+                    
+                    if actual_size == 0:
+                        print("❌ PDF file is empty!")
+                        flash('Generated PDF is empty. Please try again.', 'error')
+                        return redirect(url_for('completion_page', document_id=document_id))
+                        
+            except Exception as e:
+                print(f"❌ Error validating PDF: {e}")
+                flash('Error validating generated PDF. Please try again.', 'error')
+                return redirect(url_for('completion_page', document_id=document_id))
             
             print("📤 Sending PDF file for download...")
             
@@ -1611,8 +1888,20 @@ def debug_fields_page():
     """Debug page for testing PDF field extraction"""
     return render_template('debug_fields.html')
 
+@app.route('/realtime-editor')
+def realtime_pdf_editor():
+    """Redirect to real-time PDF editor"""
+    document_id = request.args.get('document_id')
+    if document_id:
+        return redirect(url_for('realtime.realtime_editor', document_id=document_id))
+    return redirect(url_for('realtime.realtime_editor'))
+
 if __name__ == '__main__':
     print("🚀 PDF Collaborator Flask App Starting...")
-    print("📊 Using mock data for development")
+    print("📊 Using database with real-time features")
     print("🌐 Access at: http://localhost:5006")
-    app.run(debug=True, port=5006)
+    print("⚡ Real-time editor at: http://localhost:5006/realtime-editor")
+    print("📡 WebSocket support enabled")
+    
+    # Use SocketIO to run the app for real-time features
+    socketio.run(app, debug=True, port=5006, host='0.0.0.0')
