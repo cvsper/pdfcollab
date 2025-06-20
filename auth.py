@@ -86,7 +86,51 @@ def login():
         else:
             flash('Invalid username/email or password.', 'error')
     
-    return render_template('auth/login.html', form=form)
+    try:
+        return render_template('auth/login.html', form=form)
+    except:
+        # Fallback HTML when template is not available
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Login - PDF Collaborator</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; text-align: center; background: #f5f5f5; }
+                .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                .form-group { margin: 20px 0; text-align: left; }
+                label { display: block; margin-bottom: 5px; font-weight: bold; }
+                input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+                .btn { background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; }
+                .btn:hover { background: #2563eb; }
+                .link { color: #3b82f6; text-decoration: none; margin: 10px; }
+                .divider { margin: 20px 0; text-align: center; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>Login to PDF Collaborator</h2>
+                <form method="POST">
+                    <div class="form-group">
+                        <label>Email/Username:</label>
+                        <input type="text" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password:</label>
+                        <input type="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn">Login</button>
+                </form>
+                <div class="divider">or</div>
+                <a href="/auth/google" class="btn" style="display: inline-block; text-decoration: none;">Login with Google</a>
+                <div style="margin-top: 20px;">
+                    <a href="/auth/register" class="link">Register</a> | 
+                    <a href="/" class="link">Home</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        '''
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -128,7 +172,56 @@ def register():
             flash('Registration failed. Please try again.', 'error')
             current_app.logger.error(f"Registration error: {e}")
     
-    return render_template('auth/register.html', form=form)
+    try:
+        return render_template('auth/register.html', form=form)
+    except:
+        # Fallback HTML when template is not available
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Register - PDF Collaborator</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; text-align: center; background: #f5f5f5; }
+                .container { max-width: 400px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                .form-group { margin: 20px 0; text-align: left; }
+                label { display: block; margin-bottom: 5px; font-weight: bold; }
+                input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+                .btn { background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; }
+                .btn:hover { background: #2563eb; }
+                .link { color: #3b82f6; text-decoration: none; margin: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>Register for PDF Collaborator</h2>
+                <form method="POST">
+                    <div class="form-group">
+                        <label>Username:</label>
+                        <input type="text" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password:</label>
+                        <input type="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password:</label>
+                        <input type="password" name="password2" required>
+                    </div>
+                    <button type="submit" class="btn">Register</button>
+                </form>
+                <div style="margin-top: 20px;">
+                    <a href="/auth/login" class="link">Login</a> | 
+                    <a href="/" class="link">Home</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        '''
 
 
 @auth_bp.route('/logout')
