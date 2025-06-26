@@ -152,7 +152,7 @@ class EmailService:
                     <p>The document has been signed and is ready for download.</p>
                     
                     <p style="text-align: center;">
-                        <a href="http://localhost:5006/dashboard" class="button">
+                        <a href="https://pdfcollab.onrender.com/dashboard" class="button">
                             View in Dashboard
                         </a>
                     </p>
@@ -179,7 +179,7 @@ class EmailService:
 
         The document has been signed and is ready for download.
 
-        View in Dashboard: http://localhost:5006/dashboard
+        View in Dashboard: https://pdfcollab.onrender.com/dashboard
 
         Thank you for using PDFCollab!
 
@@ -237,7 +237,7 @@ class EmailService:
                     </ul>
                     
                     <p style="text-align: center;">
-                        <a href="http://localhost:5006/dashboard" class="button">
+                        <a href="https://pdfcollab.onrender.com/dashboard" class="button">
                             Get Started Now
                         </a>
                     </p>
@@ -269,7 +269,7 @@ class EmailService:
         - Add comments and annotations
         - Securely share documents
 
-        Get Started: http://localhost:5006/dashboard
+        Get Started: https://pdfcollab.onrender.com/dashboard
 
         If you have any questions, feel free to reach out to our support team.
 
