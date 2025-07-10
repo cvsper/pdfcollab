@@ -1359,9 +1359,8 @@ def user1_interface():
                 'owner_name', 'owner_address', 'owner_telephone', 'owner_email'
             ]
             
-            # User 2 handles signatures, authorization, and ALL Section 5 (Zero Income Affidavit) fields
-            user2_signature_fields = [
-                'signature', 'applicant_signature', 'date', 'owner_signature',
+            # User 2 handles ONLY Section 5 (Zero Income Affidavit) fields
+            user2_section5_fields = [
                 'account_holder_name_affidavit', 'household_member_names_no_income', 'affidavit_signature', 
                 'printed_name_affidavit', 'date_affidavit', 'telephone_affidavit', 'affidavit_confirmation'
             ]
@@ -1377,14 +1376,19 @@ def user1_interface():
                         field['assigned_to'] = 'user1' if form_key in user1_fields else 'user2'
                         break
                 
-                # Assign signature fields to User 2
-                if any(sig_word in field_name_lower for sig_word in user2_signature_fields):
-                    field['assigned_to'] = 'user2'
-                    field['type'] = 'signature'
-                else:
-                    # Default assignment for other fields
-                    if field.get('assigned_to') is None:
-                        field['assigned_to'] = 'user1'
+                # Check if this is a Section 5 field (only these go to User 2)
+                is_section5_field = False
+                for section5_field in user2_section5_fields:
+                    if section5_field in field_name_lower or any(word in field_name_lower for word in section5_field.split('_')):
+                        field['assigned_to'] = 'user2'
+                        if 'signature' in section5_field:
+                            field['type'] = 'signature'
+                        is_section5_field = True
+                        break
+                
+                # All other fields (including other signatures) go to User 1
+                if not is_section5_field and field.get('assigned_to') is None:
+                    field['assigned_to'] = 'user1'
             
             return pdf_fields
         
