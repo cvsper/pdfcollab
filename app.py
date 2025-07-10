@@ -1642,13 +1642,15 @@ def user2_interface(document_id):
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
-        # Get User 2's contact information
+        # Get User 2's contact information (including from Section 5 form)
         user2_data = {
             'name': request.form.get('user2_name', ''),
             'email': request.form.get('user2_email', ''),
             'signature': request.form.get('signature', ''),
             'date_signed': datetime.now().isoformat()
         }
+        
+        print(f"👤 User 2 contact info: name='{user2_data['name']}', email='{user2_data['email']}'")
         
         # Process User 2's PDF field values
         print(f"👥 Processing User 2 form for document: {document_id}")
