@@ -46,41 +46,65 @@ class SupabaseManager:
     
     def get_document(self, document_id: str) -> Optional[Dict[str, Any]]:
         """Get a document by ID"""
-        result = self.supabase.table('documents').select('*').eq('id', document_id).execute()
-        
-        if not result.data:
+        try:
+            result = self.supabase.table('documents').select('*').eq('id', document_id).execute()
+            
+            if not result.data:
+                return None
+            
+            document = result.data[0]
+            
+            # Get PDF fields with error handling
+            try:
+                document['pdf_fields'] = self.get_document_fields(document_id)
+            except Exception as e:
+                print(f"Error loading fields for document {document_id}: {e}")
+                document['pdf_fields'] = []  # Fallback to empty list
+            
+            return document
+        except Exception as e:
+            print(f"Database error in get_document for document {document_id}: {e}")
             return None
-        
-        document = result.data[0]
-        
-        # Get PDF fields
-        document['pdf_fields'] = self.get_document_fields(document_id)
-        
-        return document
     
     def get_all_documents(self) -> List[Dict[str, Any]]:
         """Get all documents"""
-        result = self.supabase.table('documents').select('*').order('created_at', desc=True).execute()
-        
-        documents = result.data
-        
-        # Add PDF fields to each document
-        for document in documents:
-            document['pdf_fields'] = self.get_document_fields(document['id'])
-        
-        return documents
+        try:
+            result = self.supabase.table('documents').select('*').order('created_at', desc=True).execute()
+            
+            if not result.data:
+                return []
+            
+            documents = result.data
+            
+            # Add PDF fields to each document
+            for document in documents:
+                try:
+                    document['pdf_fields'] = self.get_document_fields(document['id'])
+                except Exception as e:
+                    print(f"Error loading fields for document {document['id']}: {e}")
+                    document['pdf_fields'] = []  # Fallback to empty list
+            
+            return documents
+        except Exception as e:
+            print(f"Database error in get_all_documents: {e}")
+            # Return empty list on database error
+            return []
     
     def update_document(self, document_id: str, updates: Dict[str, Any]) -> bool:
         """Update a document"""
-        updates['updated_at'] = datetime.now().isoformat()
-        
-        result = self.supabase.table('documents').update(updates).eq('id', document_id).execute()
-        
-        # Log the update
-        self.log_action(document_id, 'system', 'document_updated', 
-                       f"Document updated: {list(updates.keys())}")
-        
-        return len(result.data) > 0
+        try:
+            updates['updated_at'] = datetime.now().isoformat()
+            
+            result = self.supabase.table('documents').update(updates).eq('id', document_id).execute()
+            
+            # Log the update
+            self.log_action(document_id, 'system', 'document_updated', 
+                           f"Document updated: {list(updates.keys())}")
+            
+            return len(result.data) > 0
+        except Exception as e:
+            print(f"Database error in update_document for document {document_id}: {e}")
+            return False
     
     def save_pdf_fields(self, document_id: str, fields: List[Dict[str, Any]]) -> bool:
         """Save PDF fields for a document"""
@@ -125,26 +149,39 @@ class SupabaseManager:
     
     def get_document_fields(self, document_id: str) -> List[Dict[str, Any]]:
         """Get PDF fields for a document"""
-        result = self.supabase.table('pdf_fields').select('*').eq('document_id', document_id).order('page_number').order('position_y').execute()
-        
-        fields = []
-        for field in result.data:
-            # Reconstruct position object
-            field['position'] = {
-                'x': field['position_x'],
-                'y': field['position_y'],
-                'width': field['width'],
-                'height': field['height']
-            }
-            # Clean up individual position fields for API compatibility
-            field['name'] = field['field_name']
-            field['type'] = field['field_type']
-            field['value'] = field['field_value']
-            field['page'] = field['page_number']
+        try:
+            result = self.supabase.table('pdf_fields').select('*').eq('document_id', document_id).order('page_number').order('position_y').execute()
             
-            fields.append(field)
-        
-        return fields
+            if not result.data:
+                return []
+            
+            fields = []
+            for field in result.data:
+                try:
+                    # Reconstruct position object
+                    field['position'] = {
+                        'x': field.get('position_x', 0),
+                        'y': field.get('position_y', 0),
+                        'width': field.get('width', 0),
+                        'height': field.get('height', 0)
+                    }
+                    # Clean up individual position fields for API compatibility
+                    field['name'] = field.get('field_name', '')
+                    field['type'] = field.get('field_type', 'text')
+                    field['value'] = field.get('field_value', '')
+                    field['page'] = field.get('page_number', 0)
+                    
+                    fields.append(field)
+                except Exception as e:
+                    print(f"Error processing field {field.get('id', 'unknown')}: {e}")
+                    # Skip malformed fields but continue processing others
+                    continue
+            
+            return fields
+        except Exception as e:
+            print(f"Database error in get_document_fields for document {document_id}: {e}")
+            # Return empty list on database error
+            return []
     
     def update_field_value(self, field_id: str, value: str, user_type: str = 'user') -> bool:
         """Update a field value"""

@@ -1331,6 +1331,7 @@ def user1_interface():
             # Section 4: Authorization
             'user2_name': request.form.get('user2_name', ''),  # User 2's name for signature
             'user2_email': request.form.get('user2_email', ''),  # User 2's email for invitations
+            'requires_section5': request.form.get('requires_section5', ''),  # Whether User 2 needs Section 5
             'owner_name': request.form.get('owner_name', ''),
             'owner_address': request.form.get('owner_address', ''),
             'owner_telephone': request.form.get('owner_telephone', ''),
@@ -1349,7 +1350,7 @@ def user1_interface():
         def map_form_data_to_pdf_fields(form_data, pdf_fields):
             """Map the sectioned form data to PDF fields and assign to users"""
             
-            # User 1 fills most fields, User 2 handles signatures and all Section 5 (Zero Income Affidavit)
+            # User 1 fills Sections 1-3, User 2 handles Section 4 (Authorization) + Section 5 (Zero Income Affidavit)
             user1_fields = [
                 'property_address', 'apartment_number', 'city', 'state', 'zip_code',
                 'apartments_count', 'dwelling_type', 'first_name', 'last_name',
@@ -1359,7 +1360,12 @@ def user1_interface():
                 'owner_name', 'owner_address', 'owner_telephone', 'owner_email'
             ]
             
-            # User 2 handles ONLY Section 5 (Zero Income Affidavit) fields
+            # User 2 handles Section 4 (Authorization) fields - ALWAYS required
+            user2_section4_fields = [
+                'applicant_signature', 'authorization_date', 'owner_signature', 'owner_signature_date'
+            ]
+            
+            # User 2 handles Section 5 (Zero Income Affidavit) fields - conditional
             user2_section5_fields = [
                 'account_holder_name_affidavit', 'household_member_names_no_income', 'affidavit_signature', 
                 'printed_name_affidavit', 'date_affidavit', 'telephone_affidavit', 'affidavit_confirmation'
@@ -1376,7 +1382,17 @@ def user1_interface():
                         field['assigned_to'] = 'user1' if form_key in user1_fields else 'user2'
                         break
                 
-                # Check if this is a Section 5 field (only these go to User 2)
+                # Check if this is a Section 4 field (Authorization - goes to User 2)
+                is_section4_field = False
+                for section4_field in user2_section4_fields:
+                    if section4_field in field_name_lower or any(word in field_name_lower for word in section4_field.split('_')):
+                        field['assigned_to'] = 'user2'
+                        if 'signature' in section4_field:
+                            field['type'] = 'signature'
+                        is_section4_field = True
+                        break
+                
+                # Check if this is a Section 5 field (Zero Income Affidavit - goes to User 2)
                 is_section5_field = False
                 for section5_field in user2_section5_fields:
                     if section5_field in field_name_lower or any(word in field_name_lower for word in section5_field.split('_')):
@@ -1386,8 +1402,8 @@ def user1_interface():
                         is_section5_field = True
                         break
                 
-                # All other fields (including other signatures) go to User 1
-                if not is_section5_field and field.get('assigned_to') is None:
+                # All other fields go to User 1
+                if not is_section4_field and not is_section5_field and field.get('assigned_to') is None:
                     field['assigned_to'] = 'user1'
             
             return pdf_fields
@@ -1628,7 +1644,7 @@ def send_invitation(document_id):
 
 @app.route('/user2/<document_id>', methods=['GET', 'POST'])
 def user2_interface(document_id):
-    """User 2 interface - matches your React UserTwoInterface component"""
+    """User 2 interface - handles Section 4 (Authorization) always, Section 5 conditionally"""
     user_id = current_user.id if current_user.is_authenticated else None
     has_access, document = check_document_access(document_id, user_id)
     
@@ -1641,16 +1657,56 @@ def user2_interface(document_id):
         flash('Document not found or access denied.', 'error')
         return redirect(url_for('dashboard'))
     
+    # Check if Section 5 is required based on User 1's selection
+    requires_section5 = document.get('user1_data', {}).get('requires_section5') == 'yes'
+    
     if request.method == 'POST':
-        # Get User 2's contact information (including from Section 5 form)
+        # Get User 2's contact information
         user2_data = {
             'name': request.form.get('user2_name', ''),
             'email': request.form.get('user2_email', ''),
-            'signature': request.form.get('signature', ''),
             'date_signed': datetime.now().isoformat()
         }
         
         print(f"👤 User 2 contact info: name='{user2_data['name']}', email='{user2_data['email']}'")
+        
+        # Collect Section 4 (Authorization) fields - ALWAYS required for User 2
+        section4_fields = {
+            'applicant_signature': request.form.get('applicant_signature', ''),
+            'authorization_date': request.form.get('authorization_date', ''),
+            'owner_signature': request.form.get('owner_signature', ''),
+            'owner_signature_date': request.form.get('owner_signature_date', '')
+        }
+        
+        # Add Section 4 fields to user2_data
+        for key, value in section4_fields.items():
+            if value:
+                user2_data[key] = value
+                print(f"✅ Section 4 field '{key}': '{value}'")
+            else:
+                print(f"⭕ Section 4 field '{key}': empty")
+        
+        # Collect Section 5 (Zero Income Affidavit) fields - ONLY if required
+        if requires_section5:
+            section5_fields = {
+                'account_holder_name_affidavit': request.form.get('account_holder_name_affidavit', ''),
+                'household_member_names_no_income': request.form.get('household_member_names_no_income', ''),
+                'affidavit_signature': request.form.get('affidavit_signature', ''),
+                'printed_name_affidavit': request.form.get('printed_name_affidavit', ''),
+                'date_affidavit': request.form.get('date_affidavit', ''),
+                'telephone_affidavit': request.form.get('telephone_affidavit', ''),
+                'affidavit_confirmation': request.form.get('affidavit_confirmation', '')
+            }
+            
+            # Add Section 5 fields to user2_data
+            for key, value in section5_fields.items():
+                if value:
+                    user2_data[key] = value
+                    print(f"✅ Section 5 field '{key}': '{value}'")
+                else:
+                    print(f"⭕ Section 5 field '{key}': empty")
+        else:
+            print("ℹ️ Section 5 not required for this document")
         
         # Process User 2's PDF field values
         print(f"👥 Processing User 2 form for document: {document_id}")
@@ -1677,9 +1733,9 @@ def user2_interface(document_id):
                         print(f"⭕ User 2 left field '{field['name']}' empty")
                         
                     # Special handling for signature fields - use the digital signature
-                    if field.get('type') == 'signature' and user2_data.get('signature'):
-                        field['value'] = user2_data['signature']
-                        print(f"🖋️  Applied digital signature to field '{field['name']}': '{user2_data['signature'][:20]}...'")
+                    if field.get('type') == 'signature' and user2_data.get('applicant_signature'):
+                        field['value'] = user2_data['applicant_signature']
+                        print(f"🖋️  Applied digital signature to field '{field['name']}': '{user2_data['applicant_signature'][:20]}...'")
         else:
             print("❌ No pdf_fields found in document")
         
@@ -1699,25 +1755,6 @@ def user2_interface(document_id):
         for key, value in legacy_fields.items():
             if value:
                 user2_data[key] = value
-        
-        # Collect Section 5 (Zero Income Affidavit) fields directly
-        section5_fields = {
-            'account_holder_name_affidavit': request.form.get('account_holder_name_affidavit', ''),
-            'household_member_names_no_income': request.form.get('household_member_names_no_income', ''),
-            'affidavit_signature': request.form.get('affidavit_signature', ''),
-            'printed_name_affidavit': request.form.get('printed_name_affidavit', ''),
-            'date_affidavit': request.form.get('date_affidavit', ''),
-            'telephone_affidavit': request.form.get('telephone_affidavit', ''),
-            'affidavit_confirmation': request.form.get('affidavit_confirmation', '')
-        }
-        
-        # Add Section 5 fields to user2_data
-        for key, value in section5_fields.items():
-            if value:
-                user2_data[key] = value
-                print(f"✅ Section 5 field '{key}': '{value}'")
-            else:
-                print(f"⭕ Section 5 field '{key}': empty")
         
         # Handle supporting documents
         supporting_docs = []
@@ -1791,7 +1828,9 @@ def user2_interface(document_id):
         
         return redirect(url_for('completion_page', document_id=document_id))
     
-    return render_template('user2_enhanced.html', document=document)
+    return render_template('user2_enhanced.html', 
+                         document=document, 
+                         requires_section5=requires_section5)
 
 @app.route('/complete/<document_id>')
 def completion_page(document_id):

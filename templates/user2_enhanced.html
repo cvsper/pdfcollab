@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complete Section 5 - Zero Income Affidavit</title>
+    <title>Complete Authorization & Section 5</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -12,12 +12,12 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-6">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Complete Section 5</h1>
-                    <p class="mt-1 text-sm text-gray-600">Connecticut Home Energy Solutions - Zero Income Affidavit</p>
+                    <h1 class="text-3xl font-bold text-gray-900">Complete Required Sections</h1>
+                    <p class="mt-1 text-sm text-gray-600">Connecticut Home Energy Solutions - Authorization & Affidavit</p>
                 </div>
                 <div class="text-right">
                     <div class="text-sm text-gray-500">User 2 Tasks</div>
-                    <div class="text-lg font-semibold text-blue-600">Section 5 Only</div>
+                    <div class="text-lg font-semibold text-blue-600">Section 4 + Optional Section 5</div>
                 </div>
             </div>
         </div>
@@ -30,48 +30,110 @@
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-medium text-gray-900">Form Progress</h3>
-                    <span class="text-sm text-gray-500">Section 5 of 5</span>
+                    <span class="text-sm text-gray-500">Your Sections</span>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-blue-600 h-2 rounded-full" style="width: 100%"></div>
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: 80%"></div>
                 </div>
                 <div class="flex justify-between text-xs text-gray-500 mt-2">
-                    <span>Sections 1-4: Completed by User 1</span>
-                    <span>Section 5: Your responsibility</span>
+                    <span>Sections 1-3: Completed by User 1</span>
+                    <span>Section 4 & 5: Your responsibility</span>
                 </div>
             </div>
         </div>
 
-        <!-- Section 5: Zero Income Affidavit -->
-        <div class="bg-white shadow rounded-lg">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900">Section 5: Zero Income Affidavit</h2>
-                <p class="mt-1 text-sm text-gray-600">Please complete all fields in this section</p>
+        <form method="POST" enctype="multipart/form-data" class="space-y-8">
+            
+            <!-- Contact Information -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-900">Your Contact Information</h2>
+                    <p class="mt-1 text-sm text-gray-600">Required for processing and notifications</p>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Your Full Name *</label>
+                            <input type="text" name="user2_name" 
+                                   class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                   placeholder="Enter your full name" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Your Email *</label>
+                            <input type="email" name="user2_email" 
+                                   class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                   placeholder="Enter your email address" required>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <form method="POST" class="p-6">
-                <div class="space-y-6">
+            <!-- Section 4: Authorization -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-900">Section 4: Authorization</h2>
+                    <p class="mt-1 text-sm text-gray-600">Required signatures and authorizations</p>
+                </div>
+                <div class="p-6 space-y-6">
                     
-                    <!-- User 2 Contact Information -->
+                    <!-- Authorization Notice -->
                     <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
-                        <h4 class="text-sm font-medium text-blue-900 mb-4">Your Contact Information</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Your Full Name *</label>
-                                <input type="text" name="user2_name" 
-                                       class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                       placeholder="Enter your full name" required>
+                        <h4 class="text-sm font-medium text-blue-900 mb-2">Authorization Required:</h4>
+                        <p class="text-sm text-blue-700">
+                            By signing below, you authorize the completion of this Connecticut Home Energy Solutions application
+                            and confirm that all information provided is accurate to the best of your knowledge.
+                        </p>
+                    </div>
+
+                    <!-- Authorization Signature Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-4 border-2 border-blue-300 bg-blue-50 rounded-lg">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Applicant Signature *</label>
+                            <input type="text" name="applicant_signature" 
+                                   class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                   placeholder="Type your signature" required>
+                            <p class="text-xs text-blue-600 mt-1">This authorizes the application submission</p>
+                        </div>
+                        <div class="p-4 border-2 border-blue-300 bg-blue-50 rounded-lg">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+                            <input type="date" name="authorization_date" 
+                                   class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+                            <p class="text-xs text-blue-600 mt-1">Date of authorization</p>
+                        </div>
+                    </div>
+
+                    <!-- Property Owner Authorization (if needed) -->
+                    <div class="border-t pt-6">
+                        <h5 class="font-medium text-gray-900 mb-4">Property Owner Authorization (if different from applicant)</h5>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="p-4 border border-gray-300 bg-gray-50 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Property Owner Signature</label>
+                                <input type="text" name="owner_signature" 
+                                       class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
+                                       placeholder="Property owner signature (if applicable)">
+                                <p class="text-xs text-gray-600 mt-1">Only required if property owner is different from applicant</p>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Your Email *</label>
-                                <input type="email" name="user2_email" 
-                                       class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                       placeholder="Enter your email address" required>
+                            <div class="p-4 border border-gray-300 bg-gray-50 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Owner Signature Date</label>
+                                <input type="date" name="owner_signature_date" 
+                                       class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm">
+                                <p class="text-xs text-gray-600 mt-1">Date of property owner authorization</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Important Notice -->
+                </div>
+            </div>
+
+            <!-- Section 5: Zero Income Affidavit (Conditional) -->
+            <div id="section5Container" class="bg-white shadow rounded-lg" style="display: none;">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-900">Section 5: Zero Income Affidavit</h2>
+                    <p class="mt-1 text-sm text-gray-600">Required by User 1 - Complete if household members have zero income</p>
+                </div>
+                <div class="p-6 space-y-6">
+                    
+                    <!-- Zero Income Notice -->
                     <div class="bg-orange-50 border border-orange-200 rounded-md p-4">
                         <div class="flex">
                             <div class="flex-shrink-0">
@@ -82,20 +144,10 @@
                             <div class="ml-3">
                                 <h3 class="text-sm font-medium text-orange-800">Zero Income Affidavit Required</h3>
                                 <div class="mt-2 text-sm text-orange-700">
-                                    <p>Please complete this section if you need to certify that certain household members have zero income. All information must be accurate and complete.</p>
+                                    <p>User 1 has indicated that you need to complete this Zero Income Affidavit. Please complete all fields accurately.</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Instructions -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
-                        <h4 class="text-sm font-medium text-blue-900 mb-2">Instructions:</h4>
-                        <p class="text-sm text-blue-700">
-                            Please complete the Zero Income Affidavit below if any household members over age 18 have no income. 
-                            I understand that the Home Energy Solutions - Income Eligible program may request supporting 
-                            documentation regarding my household income. I affirm that the information indicated on this form is accurate.
-                        </p>
                     </div>
 
                     <!-- Account Holder Name -->
@@ -103,15 +155,8 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Account Holder Name *</label>
                         <input type="text" name="account_holder_name_affidavit" 
                                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                               placeholder="Enter the account holder's full name" required>
-                        <p class="text-xs text-orange-600 mt-1">
-                            <span class="inline-flex items-center">
-                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                                This field was assigned to you by User 1
-                            </span>
-                        </p>
+                               placeholder="Enter the account holder's full name">
+                        <p class="text-xs text-orange-600 mt-1">Account holder for utility bills</p>
                     </div>
 
                     <!-- Household Members with No Income -->
@@ -126,21 +171,6 @@
                         <textarea name="household_member_names_no_income" rows="6" 
                                   class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                                   placeholder="Name(s)&#10;&#10;Example:&#10;John Smith&#10;Jane Doe&#10;&#10;Leave blank if no household members have zero income"></textarea>
-                        <p class="text-xs text-orange-600 mt-1">
-                            <span class="inline-flex items-center">
-                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                                This field was assigned to you by User 1
-                            </span>
-                        </p>
-                    </div>
-
-                    <!-- Supporting Documentation Notice -->
-                    <div class="p-4 bg-orange-50 border border-orange-200 rounded-md">
-                        <p class="text-sm text-orange-800">
-                            <strong>Important:</strong> I understand that the Home Energy Solutions - Income Eligible program may request supporting documentation regarding my household income. I affirm that the information indicated on this form is accurate.
-                        </p>
                     </div>
 
                     <!-- Affidavit Signature Fields -->
@@ -151,28 +181,24 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Signature *</label>
                                 <input type="text" name="affidavit_signature" 
                                        class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                                       placeholder="Type your signature" required>
-                                <p class="text-xs text-orange-600 mt-1">This field was assigned to you by User 1</p>
+                                       placeholder="Type your signature">
                             </div>
                             <div class="p-4 border-2 border-orange-300 bg-orange-50 rounded-lg">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Printed Name *</label>
                                 <input type="text" name="printed_name_affidavit" 
                                        class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                                       placeholder="Enter your printed name" required>
-                                <p class="text-xs text-orange-600 mt-1">This field was assigned to you by User 1</p>
+                                       placeholder="Enter your printed name">
                             </div>
                             <div class="p-4 border-2 border-orange-300 bg-orange-50 rounded-lg">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Date *</label>
                                 <input type="date" name="date_affidavit" 
-                                       class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm" required>
-                                <p class="text-xs text-orange-600 mt-1">This field was assigned to you by User 1</p>
+                                       class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm">
                             </div>
                             <div class="p-4 border-2 border-orange-300 bg-orange-50 rounded-lg md:col-span-3">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Telephone *</label>
                                 <input type="tel" name="telephone_affidavit" 
                                        class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-                                       placeholder="Enter your telephone number" required>
-                                <p class="text-xs text-orange-600 mt-1">This field was assigned to you by User 1</p>
+                                       placeholder="Enter your telephone number">
                             </div>
                         </div>
                     </div>
@@ -180,33 +206,99 @@
                     <!-- Final Affirmation -->
                     <div class="p-4 border-2 border-orange-300 bg-orange-50 rounded-lg">
                         <label class="flex items-start">
-                            <input type="checkbox" name="affidavit_confirmation" required 
+                            <input type="checkbox" name="affidavit_confirmation" 
                                    class="mr-3 mt-1 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded">
                             <span class="text-sm text-gray-700">
                                 I confirm that I understand the requirements of this Zero Income Affidavit and that all information provided is accurate. I understand that false statements may result in penalties and disqualification from the Home Energy Solutions - Income Eligible program.
                             </span>
                         </label>
-                        <p class="text-xs text-orange-600 mt-1">
-                            <span class="inline-flex items-center">
-                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                                This field was assigned to you by User 1
-                            </span>
-                        </p>
                     </div>
 
                 </div>
+            </div>
 
-                <!-- Submit Button -->
-                <div class="mt-8 flex justify-end">
-                    <button type="submit" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200">
-                        Complete Section 5 & Finalize Document
-                    </button>
+            <!-- Supporting Documents Upload -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-900">Supporting Documents</h2>
+                    <p class="mt-1 text-sm text-gray-600">Upload any supporting documents required for your application</p>
                 </div>
-            </form>
-        </div>
+                <div class="p-6 space-y-6">
+                    
+                    <!-- Supporting Documents Information -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+                        <h4 class="text-sm font-medium text-blue-900 mb-2">Common Supporting Documents:</h4>
+                        <div class="text-sm text-blue-700">
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>EBT Award Letter for Supplement Income Recipients</li>
+                                <li>Energy Assistance Award Letter</li>
+                                <li>Section 8 Housing Choice Voucher</li>
+                                <li>Proof of income or no-income status</li>
+                                <li>Utility bills</li>
+                                <li>Other relevant documentation</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- File Upload Section -->
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                        <div class="text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="mt-4">
+                                <label for="supporting_docs" class="cursor-pointer">
+                                    <span class="mt-2 block text-sm font-medium text-gray-900">
+                                        Upload supporting documents
+                                    </span>
+                                    <span class="block text-sm text-gray-600">
+                                        PDF, JPG, PNG files up to 10MB each
+                                    </span>
+                                </label>
+                                <input id="supporting_docs" name="supporting_docs" type="file" 
+                                       class="sr-only" multiple 
+                                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">
+                                You can select multiple files at once
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Selected Files Display -->
+                    <div id="selected-files" class="hidden">
+                        <h4 class="text-sm font-medium text-gray-900 mb-2">Selected Files:</h4>
+                        <div id="file-list" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Upload Instructions -->
+                    <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-yellow-800">Upload Guidelines</h3>
+                                <div class="mt-2 text-sm text-yellow-700">
+                                    <p>Please ensure all documents are clear and readable. Files should be under 10MB each. Accepted formats: PDF, JPG, PNG, DOC, DOCX.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end">
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors duration-200">
+                    Complete Required Sections & Finalize Document
+                </button>
+            </div>
+        </form>
 
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -238,14 +330,127 @@
     </main>
 
     <script>
-        // Auto-populate today's date
+        // Check if Section 5 is required based on URL parameter or document data
         document.addEventListener('DOMContentLoaded', function() {
-            const dateInput = document.querySelector('input[name="date_affidavit"]');
-            if (dateInput && !dateInput.value) {
+            // Auto-populate today's date for authorization
+            const authDateInput = document.querySelector('input[name="authorization_date"]');
+            if (authDateInput && !authDateInput.value) {
                 const today = new Date();
                 const formattedDate = today.toISOString().split('T')[0];
-                dateInput.value = formattedDate;
+                authDateInput.value = formattedDate;
             }
+
+            // Auto-populate today's date for affidavit if Section 5 is shown
+            const affidavitDateInput = document.querySelector('input[name="date_affidavit"]');
+            if (affidavitDateInput && !affidavitDateInput.value) {
+                const today = new Date();
+                const formattedDate = today.toISOString().split('T')[0];
+                affidavitDateInput.value = formattedDate;
+            }
+
+            // Show Section 5 if required (controlled by the backend)
+            const requiresSection5 = {{ 'true' if requires_section5 else 'false' }};
+            
+            if (requiresSection5) {
+                const section5Container = document.getElementById('section5Container');
+                if (section5Container) {
+                    section5Container.style.display = 'block';
+                    
+                    // Make Section 5 fields required
+                    const section5Required = section5Container.querySelectorAll('input[name="account_holder_name_affidavit"], input[name="affidavit_signature"], input[name="printed_name_affidavit"], input[name="date_affidavit"], input[name="telephone_affidavit"], input[name="affidavit_confirmation"]');
+                    section5Required.forEach(field => {
+                        if (field.type !== 'checkbox') {
+                            field.required = true;
+                        }
+                    });
+                }
+            }
+
+            // Handle file upload display
+            const fileInput = document.getElementById('supporting_docs');
+            const selectedFilesDiv = document.getElementById('selected-files');
+            const fileListDiv = document.getElementById('file-list');
+
+            fileInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                
+                if (files.length > 0) {
+                    selectedFilesDiv.classList.remove('hidden');
+                    fileListDiv.innerHTML = '';
+                    
+                    files.forEach((file, index) => {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-md';
+                        
+                        const fileInfo = document.createElement('div');
+                        fileInfo.className = 'flex items-center';
+                        
+                        const fileIcon = document.createElement('svg');
+                        fileIcon.className = 'h-5 w-5 text-gray-400 mr-2';
+                        fileIcon.innerHTML = '<path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />';
+                        
+                        const fileName = document.createElement('span');
+                        fileName.className = 'text-sm font-medium text-gray-900';
+                        fileName.textContent = file.name;
+                        
+                        const fileSize = document.createElement('span');
+                        fileSize.className = 'text-xs text-gray-500 ml-2';
+                        fileSize.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                        
+                        fileInfo.appendChild(fileIcon);
+                        fileInfo.appendChild(fileName);
+                        fileInfo.appendChild(fileSize);
+                        
+                        const removeButton = document.createElement('button');
+                        removeButton.type = 'button';
+                        removeButton.className = 'text-red-500 hover:text-red-700 text-sm';
+                        removeButton.textContent = 'Remove';
+                        removeButton.onclick = function() {
+                            // Create new FileList without this file
+                            const dt = new DataTransfer();
+                            files.forEach((f, i) => {
+                                if (i !== index) dt.items.add(f);
+                            });
+                            fileInput.files = dt.files;
+                            
+                            // Trigger change event to update display
+                            fileInput.dispatchEvent(new Event('change'));
+                        };
+                        
+                        fileItem.appendChild(fileInfo);
+                        fileItem.appendChild(removeButton);
+                        fileListDiv.appendChild(fileItem);
+                    });
+                } else {
+                    selectedFilesDiv.classList.add('hidden');
+                }
+            });
+
+            // Make the upload area clickable
+            const uploadArea = document.querySelector('.border-dashed');
+            uploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+
+            // Handle drag and drop
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('border-blue-500', 'bg-blue-50');
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+                
+                const files = e.dataTransfer.files;
+                fileInput.files = files;
+                fileInput.dispatchEvent(new Event('change'));
+            });
         });
     </script>
 </body>
