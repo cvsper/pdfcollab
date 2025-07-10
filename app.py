@@ -344,8 +344,12 @@ def get_documents(user_id=None):
             all_documents = user_mock_documents + db_documents
             return all_documents if all_documents else user_mock_documents
         except Exception as e:
-            print(f"Database error: get_all_documents")
+            print(f"Database error in get_documents function")
             print(f"Error details: {e}")
+            # Log the error for debugging
+            import traceback
+            print(f"Stack trace: {traceback.format_exc()}")
+            
             # In production, return empty list if database fails
             if is_production:
                 return []
@@ -371,8 +375,11 @@ def get_document_by_id(document_id):
             document = Document.query.filter_by(id=document_id).first()
             return document.to_dict() if document else next((doc for doc in MOCK_DOCUMENTS if doc['id'] == document_id), None)
         except Exception as e:
-            print(f"Database error: get_document")
+            print(f"Database error in get_document_by_id function")
             print(f"Error details: {e}")
+            # Log the error for debugging
+            import traceback
+            print(f"Stack trace: {traceback.format_exc()}")
             return next((doc for doc in MOCK_DOCUMENTS if doc['id'] == document_id), None)
     return next((doc for doc in MOCK_DOCUMENTS if doc['id'] == document_id), None)
 
@@ -1248,20 +1255,47 @@ def start_workflow():
 def user1_interface():
     """User 1 interface - uses homeworks.pdf automatically"""
     if request.method == 'POST':
-        # Use the homworks.pdf file automatically instead of file upload
-        homeworks_pdf_path = os.path.join(os.path.dirname(__file__), 'homworks.pdf')
-        
-        if not os.path.exists(homeworks_pdf_path):
-            flash('homworks.pdf not found in application directory', 'error')
-            return redirect(request.url)
-        
+        # Download homworks.pdf from Supabase instead of local file
         document_id = str(uuid.uuid4())
         filename = 'homworks.pdf'
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{document_id}_{filename}")
         
-        # Copy the homeworks.pdf to the uploads directory
-        import shutil
-        shutil.copy2(homeworks_pdf_path, file_path)
+        # Try to download from Supabase first
+        from supabase_api import get_supabase_api
+        supabase_api = get_supabase_api()
+        
+        pdf_loaded = False
+        
+        if supabase_api.is_available():
+            print("🌐 Attempting to download homworks.pdf from Supabase...")
+            pdf_loaded = supabase_api.download_pdf_to_file('homworks.pdf', file_path, 'pdfs')
+        
+        # Fallback to local file if Supabase fails
+        if not pdf_loaded:
+            print("📁 Trying local homworks.pdf file...")
+            homeworks_pdf_path = os.path.join(os.path.dirname(__file__), 'homworks.pdf')
+            
+            if os.path.exists(homeworks_pdf_path):
+                # Copy the local homworks.pdf to the uploads directory
+                import shutil
+                shutil.copy2(homeworks_pdf_path, file_path)
+                print("✅ Using local homworks.pdf file")
+                pdf_loaded = True
+        
+        # Final fallback to embedded PDF for deployment
+        if not pdf_loaded:
+            try:
+                print("📦 Using embedded homworks.pdf...")
+                from embedded_homworks import save_homworks_pdf_to_file
+                save_homworks_pdf_to_file(file_path)
+                print("✅ Using embedded homworks.pdf")
+                pdf_loaded = True
+            except ImportError:
+                print("❌ Embedded PDF module not found")
+        
+        if not pdf_loaded:
+            flash('homworks.pdf not found (tried Supabase, local, and embedded)', 'error')
+            return redirect(request.url)
         
         # Get form data from User 1 (sections 1-5)
         user1_data = {
@@ -1468,17 +1502,64 @@ def user1_interface():
             return redirect(url_for('dashboard'))
     
     # For GET request, load homworks.pdf and extract fields for form display
-    homeworks_pdf_path = os.path.join(os.path.dirname(__file__), 'homworks.pdf')
+    # Try to download from Supabase first
+    from supabase_api import get_supabase_api
+    supabase_api = get_supabase_api()
     
-    if not os.path.exists(homeworks_pdf_path):
-        flash('homworks.pdf not found in application directory', 'error')
+    temp_pdf_path = None
+    pdf_loaded = False
+    
+    if supabase_api.is_available():
+        print("🌐 Attempting to download homworks.pdf from Supabase for form display...")
+        # Create a temporary file for PDF analysis
+        import tempfile
+        temp_pdf_path = tempfile.mktemp(suffix='.pdf')
+        pdf_loaded = supabase_api.download_pdf_to_file('homworks.pdf', temp_pdf_path, 'pdfs')
+    
+    # Fallback to local file if Supabase fails
+    if not pdf_loaded:
+        print("📁 Falling back to local homworks.pdf file for form display...")
+        homeworks_pdf_path = os.path.join(os.path.dirname(__file__), 'homworks.pdf')
+        
+        if os.path.exists(homeworks_pdf_path):
+            temp_pdf_path = homeworks_pdf_path
+            print("✅ Using local homworks.pdf file for form display")
+            pdf_loaded = True
+    
+    # Final fallback to embedded PDF for deployment
+    if not pdf_loaded:
+        try:
+            print("📦 Using embedded homworks.pdf for form display...")
+            from embedded_homworks import save_homworks_pdf_to_file
+            import tempfile
+            # Create a temporary file for the embedded PDF
+            temp_pdf_path = tempfile.mktemp(suffix='.pdf')
+            save_homworks_pdf_to_file(temp_pdf_path)
+            print("✅ Using embedded homworks.pdf for form display")
+            pdf_loaded = True
+        except ImportError:
+            print("❌ Embedded PDF module not found")
+    
+    if not pdf_loaded:
+        flash('homworks.pdf not found (tried Supabase, local, and embedded)', 'error')
         return redirect(url_for('dashboard'))
     
     # Extract PDF fields for form structure
-    pdf_analysis = extract_pdf_fields(homeworks_pdf_path)
+    pdf_analysis = extract_pdf_fields(temp_pdf_path)
     if "error" in pdf_analysis:
         flash(f'Error processing PDF: {pdf_analysis["error"]}', 'error')
         return redirect(url_for('dashboard'))
+    
+    # Clean up temporary file if we created one
+    # Check if it's a temporary file (not the local homeworks.pdf)
+    is_temp_file = pdf_loaded and temp_pdf_path and (
+        'homeworks_pdf_path' not in locals() or temp_pdf_path != locals().get('homeworks_pdf_path')
+    )
+    if is_temp_file:
+        try:
+            os.remove(temp_pdf_path)
+        except:
+            pass  # Ignore cleanup errors
     
     return render_template('user1_enhanced.html', pdf_fields=pdf_analysis.get('fields', []))
 

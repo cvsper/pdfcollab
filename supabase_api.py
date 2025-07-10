@@ -83,6 +83,23 @@ class SupabaseAPI:
             print(f"❌ Failed to download PDF: {e}")
             return None
     
+    def download_pdf_to_file(self, file_name: str, local_path: str, bucket_name: str = "pdfs") -> bool:
+        """Download PDF from Supabase and save to local file"""
+        if not self.is_available():
+            return False
+        
+        try:
+            pdf_data = self.download_pdf(file_name, bucket_name)
+            if pdf_data:
+                with open(local_path, 'wb') as f:
+                    f.write(pdf_data)
+                print(f"✅ Downloaded {file_name} from Supabase to {local_path}")
+                return True
+            return False
+        except Exception as e:
+            print(f"❌ Failed to download PDF to file: {e}")
+            return False
+    
     def delete_pdf(self, file_name: str, bucket_name: str = "pdfs") -> bool:
         """Delete PDF file from Supabase Storage"""
         if not self.is_available():
