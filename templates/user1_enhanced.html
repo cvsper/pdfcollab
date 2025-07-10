@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}User 1 - Upload & Edit PDF - PDF Collaborator{% endblock %}
+{% block title %}User 1 - Complete Form Sections - PDF Collaborator{% endblock %}
 
 {% block content %}
-<!-- Enhanced User 1 Interface with Real PDF Field Editing -->
+<!-- Enhanced User 1 Interface with 5-Section Form -->
 <div class="space-y-8">
     <!-- Header -->
     <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-bold text-gray-900">User 1 - Upload & Edit PDF Fields</h2>
+        <h2 class="text-2xl font-bold text-gray-900">Complete Energy Solutions Application</h2>
         <a href="{{ url_for('dashboard') }}" 
            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
             Cancel
@@ -15,789 +15,525 @@
     </div>
 
     <form method="POST" enctype="multipart/form-data" id="user1Form">
-        <!-- File Upload Section -->
+        <!-- Progress Bar -->
         <div class="bg-white shadow sm:rounded-lg overflow-hidden">
             <div class="px-4 py-5 sm:p-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Upload PDF Document</h3>
-                <div class="mt-2 max-w-xl text-sm text-gray-500">
-                    <p>Upload your PDF document. We'll extract the form fields automatically and let you assign which fields User 2 should complete.</p>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Application Progress</h3>
+                    <span class="text-sm text-gray-500">Section <span id="current-section">1</span> of 5</span>
                 </div>
-                <div class="mt-5">
-                    <div id="file-drop-area" 
-                         class="flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6 hover:border-blue-400 transition-colors cursor-pointer"
-                         onclick="console.log('Drop area clicked'); document.getElementById('pdf_file').click()">
-                        <div class="space-y-1 text-center">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            <div class="flex text-sm text-gray-600">
-                                <span class="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 hover:text-blue-500">Upload a PDF</span>
-                                <p class="pl-1">or drag and drop</p>
-                            </div>
-                            <p class="text-xs text-gray-500">PDF up to 10MB</p>
-                        </div>
-                        <input id="pdf_file" name="pdf_file" type="file" accept=".pdf" class="sr-only" required onchange="handleFileSelect(this)">
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 20%"></div>
+                </div>
+                <div class="flex justify-between mt-2 text-xs text-gray-500">
+                    <span>Property Info</span>
+                    <span>Energy Info</span>
+                    <span>Qualification</span>
+                    <span>Authorization</span>
+                    <span>Income Affidavit</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 1: Property Information -->
+        <div class="section-container bg-white shadow sm:rounded-lg overflow-hidden" id="section-1">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Section 1: Property Information (1-4 Units)</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Property Address</label>
+                        <input type="text" name="property_address" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
-                    <div id="file-preview" class="mt-4 hidden">
-                        <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
-                            <div class="flex items-center">
-                                <svg class="h-8 w-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
-                                </svg>
-                                <div class="ml-3">
-                                    <p class="text-sm font-medium text-gray-900" id="file-name"></p>
-                                    <p class="text-sm text-gray-500" id="file-size"></p>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Apartment Number</label>
+                        <input type="text" name="apartment_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">City</label>
+                        <input type="text" name="city" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">State</label>
+                        <input type="text" name="state" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
+                        <input type="text" name="zip_code" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Number of Apartments in Property</label>
+                        <input type="number" name="apartments_count" min="1" max="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type of Dwelling</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="dwelling_type" value="single_family" class="mr-2">
+                            <span class="text-sm">Single Family Home</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="dwelling_type" value="apartment" class="mr-2">
+                            <span class="text-sm">Apartment</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="dwelling_type" value="condominium" class="mr-2">
+                            <span class="text-sm">Condominium</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Applicant and Energy Information -->
+        <div class="section-container bg-white shadow sm:rounded-lg overflow-hidden hidden" id="section-2">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Section 2: Applicant and Energy Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                        <input type="text" name="first_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                        <input type="text" name="last_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Telephone</label>
+                        <input type="tel" name="telephone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Primary Heating Fuel Type</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="heating_fuel" value="electric" class="mr-2">
+                                <span class="text-sm">Electric</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="heating_fuel" value="natural_gas" class="mr-2">
+                                <span class="text-sm">Natural Gas</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="heating_fuel" value="oil" class="mr-2">
+                                <span class="text-sm">Oil</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="heating_fuel" value="propane" class="mr-2">
+                                <span class="text-sm">Propane</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Applicant Is the</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="applicant_type" value="property_owner" class="mr-2">
+                                <span class="text-sm">Property Owner</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="applicant_type" value="renter_tenant" class="mr-2">
+                                <span class="text-sm">Renter/Tenant</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Electric Utility</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="electric_utility" value="eversource" class="mr-2">
+                                <span class="text-sm">Eversource</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="electric_utility" value="ui" class="mr-2">
+                                <span class="text-sm">UI</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="electric_utility" value="other" class="mr-2">
+                                <span class="text-sm">Other</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Natural Gas Utility</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="gas_utility" value="cng" class="mr-2">
+                                <span class="text-sm">CNG</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="gas_utility" value="eversource" class="mr-2">
+                                <span class="text-sm">Eversource</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="gas_utility" value="scg" class="mr-2">
+                                <span class="text-sm">SCG</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Electric Account Number</label>
+                        <input type="text" name="electric_account" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Gas Account Number</label>
+                        <input type="text" name="gas_account" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Applicant Qualification Information -->
+        <div class="section-container bg-white shadow sm:rounded-lg overflow-hidden hidden" id="section-3">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Section 3: Applicant Qualification Information</h3>
+                
+                <div class="space-y-6">
+                    <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <p class="text-sm text-yellow-800">Please select one of the four qualification options below and provide the required information.</p>
+                    </div>
+
+                    <!-- Option A -->
+                    <div class="border border-gray-200 rounded-md p-4">
+                        <label class="flex items-start">
+                            <input type="radio" name="qualification_option" value="option_a" class="mr-3 mt-1">
+                            <div>
+                                <span class="font-medium text-gray-900">Option A: Enrolled in utility programs</span>
+                                <div class="mt-2 space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="utility_program" value="electric_discount" class="mr-2">
+                                        <span class="text-sm">Electric Discount Rate</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="utility_program" value="matching_payment" class="mr-2">
+                                        <span class="text-sm">Matching Payment Program</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="utility_program" value="low_income_discount" class="mr-2">
+                                        <span class="text-sm">Low-Income Discount Rate</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="utility_program" value="bill_forgiveness" class="mr-2">
+                                        <span class="text-sm">Bill Forgiveness Program</span>
+                                    </label>
                                 </div>
                             </div>
-                            <button type="button" onclick="clearFile()" class="text-gray-400 hover:text-gray-600">
-                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                                </svg>
-                            </button>
-                        </div>
+                        </label>
+                    </div>
+
+                    <!-- Option B -->
+                    <div class="border border-gray-200 rounded-md p-4">
+                        <label class="flex items-start">
+                            <input type="radio" name="qualification_option" value="option_b" class="mr-3 mt-1">
+                            <div>
+                                <span class="font-medium text-gray-900">Option B: Have required documentation</span>
+                                <div class="mt-2 space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="documentation" value="ebt_award" class="mr-2">
+                                        <span class="text-sm">EBT Award Letter for Supplement Income Recipients</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="documentation" value="energy_assistance" class="mr-2">
+                                        <span class="text-sm">Energy Assistance Award Letter</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="documentation" value="section_8" class="mr-2">
+                                        <span class="text-sm">Section 8 Housing Choice Voucher</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Option C -->
+                    <div class="border border-gray-200 rounded-md p-4">
+                        <label class="flex items-start">
+                            <input type="radio" name="qualification_option" value="option_c" class="mr-3 mt-1">
+                            <div>
+                                <span class="font-medium text-gray-900">Option C: Meet income requirements</span>
+                                <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">How many people live in your household?</label>
+                                        <input type="number" name="household_size" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">How many people are age 18 or older?</label>
+                                        <input type="number" name="adults_count" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Annual income of ALL household members age 18 and older</label>
+                                        <input type="number" name="annual_income" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Option D -->
+                    <div class="border border-gray-200 rounded-md p-4">
+                        <label class="flex items-start">
+                            <input type="radio" name="qualification_option" value="option_d" class="mr-3 mt-1">
+                            <div>
+                                <span class="font-medium text-gray-900">Option D: Multifamily property (2-4 units, 50%+ qualifying tenants)</span>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-600">Property owner must complete tenant qualification table</p>
+                                </div>
+                            </div>
+                        </label>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- PDF Field Editor - Shows after upload -->
-        <div id="pdf-editor" class="bg-white shadow sm:rounded-lg overflow-hidden hidden">
+        <!-- Section 4: Authorization -->
+        <div class="section-container bg-white shadow sm:rounded-lg overflow-hidden hidden" id="section-4">
             <div class="px-4 py-5 sm:p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Edit PDF Fields & Assign to Users</h3>
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-blue-100 border-2 border-blue-500 rounded mr-2"></div>
-                            <span class="text-sm text-gray-600">Your fields</span>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-orange-100 border-2 border-orange-500 rounded mr-2"></div>
-                            <span class="text-sm text-gray-600">User 2 fields</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PDF Preview and Field List -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- PDF Preview -->
-                    <div class="space-y-4">
-                        <h4 class="font-medium text-gray-900">PDF Preview</h4>
-                        <div class="border-2 border-gray-200 rounded-lg bg-gray-50 p-4 min-h-[500px] flex items-center justify-center">
-                            <div id="pdf-preview-container" class="text-center">
-                                <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
-                                </svg>
-                                <p class="text-gray-500">PDF preview will appear here</p>
-                            </div>
-                        </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Section 4: Authorization</h3>
+                
+                <div class="space-y-6">
+                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                        <p class="text-sm text-blue-800">
+                            I am the applicant who has completed this application and request Home Energy Solutions - Income Eligible services 
+                            for the property listed in Section 1. I understand, if qualified, the initial visit will be provided at no cost.
+                        </p>
                     </div>
 
-                    <!-- Field List and Assignment -->
-                    <div class="space-y-4">
-                        <h4 class="font-medium text-gray-900">Detected PDF Fields</h4>
-                        <div id="loading-fields" class="text-center py-8">
-                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                            <p class="mt-2 text-gray-500">Analyzing PDF fields...</p>
-                        </div>
-                        
-                        <div id="pdf-fields-list" class="space-y-3 hidden">
-                            <!-- Fields will be populated here via JavaScript -->
-                        </div>
-                        
-                        <!-- Manual Field Addition -->
-                        <div id="manual-field-section" class="mt-6 p-4 border-2 border-dashed border-gray-300 rounded-lg hidden">
-                            <h5 class="font-medium text-gray-900 mb-3">Add Custom Field</h5>
-                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                <input type="text" id="custom-field-name" placeholder="Field name (e.g., 'Employee ID')"
-                                       class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <select id="custom-field-type" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="text">Text</option>
-                                    <option value="email">Email</option>
-                                    <option value="tel">Phone</option>
-                                    <option value="date">Date</option>
-                                    <option value="textarea">Textarea</option>
-                                    <option value="checkbox">Checkbox</option>
-                                    <option value="radio">Radio (Yes/No)</option>
-                                    <option value="signature">Signature</option>
-                                </select>
-                                <select id="custom-field-user" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="user1">My Field</option>
-                                    <option value="user2">User 2 Field</option>
-                                </select>
-                            </div>
-                            <div class="mt-3 flex justify-between">
-                                <button type="button" onclick="cancelCustomField()" 
-                                        class="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
-                                <button type="button" onclick="addCustomField()" 
-                                        class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                                    Add Field
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Add Field Button -->
-                        <div class="mt-4 text-center">
-                            <button type="button" onclick="showCustomFieldForm()" 
-                                    class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg>
-                                Add Custom Field
-                            </button>
-                        </div>
-                        
-                        <div id="no-fields" class="text-center py-8 hidden">
-                            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                            </svg>
-                            <p class="text-gray-500">No editable fields detected in this PDF</p>
-                            <p class="text-sm text-gray-400 mt-1">You can still proceed with the workflow</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User 2 Information Section -->
-                <div class="mt-8 border-t pt-6">
-                    <h4 class="text-md font-medium text-gray-900 mb-4">User 2 Information</h4>
-                    <div class="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label for="user2_name" class="block text-sm font-medium text-gray-700">Full Name *</label>
-                            <input type="text" name="user2_name" id="user2_name" required
-                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">User 2 Name (for signature)</label>
+                            <input type="text" name="user2_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Name of person who will sign">
                         </div>
                         <div>
-                            <label for="user2_email" class="block text-sm font-medium text-gray-700">Email Address *</label>
-                            <input type="email" name="user2_email" id="user2_email" required
-                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">User 2 Email</label>
+                            <input type="email" name="user2_email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email to send invitation">
                         </div>
                     </div>
-                </div>
 
-                <!-- Action Buttons -->
-                <div class="mt-8 flex justify-end space-x-3">
-                    <a href="{{ url_for('dashboard') }}" 
-                       class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        Cancel
-                    </a>
-                    <button type="submit" id="submit-btn"
-                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
-                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
-                        </svg>
-                        Submit to User 2
-                    </button>
+                    <div class="border-t pt-4">
+                        <h4 class="font-medium text-gray-900 mb-4">Property Owner Information (if different from applicant)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Property Owner Name</label>
+                                <input type="text" name="owner_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Owner Address</label>
+                                <input type="text" name="owner_address" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Owner Telephone</label>
+                                <input type="tel" name="owner_telephone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Owner Email</label>
+                                <input type="email" name="owner_email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Section 5: Zero Income Affidavit -->
+        <div class="section-container bg-white shadow sm:rounded-lg overflow-hidden hidden" id="section-5">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Section 5: Home Energy Solutions - Income Eligible Zero Income Affidavit</h3>
+                
+                <div class="space-y-6">
+                    <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <p class="text-sm font-medium text-yellow-800 mb-2">Instructions:</p>
+                        <p class="text-sm text-yellow-800">
+                            Please complete the Zero Income Affidavit only if you qualify with Option C and you have household members over the age of 18 with no income.
+                        </p>
+                    </div>
+
+                    <!-- Affidavit Statement -->
+                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                        <p class="text-sm text-blue-800 leading-relaxed">
+                            I (account holder name), <strong>_______________________________________________________________</strong>, affirm that no adult over the age of 18 years, listed below, who lives in my household, has had any income in the four weeks prior to the date this affidavit is signed. This includes income from employment, a pension, unemployment or worker's compensation, cash assistance from the Connecticut Department of Social Services (including Temporary Family Assistance, State Supplement or the State Administered General Assistance Program), benefits from the Social Security Administration or Veterans Benefits Administration, child support, alimony, interest or any other income source.
+                        </p>
+                    </div>
+
+                    <!-- Information Note for User 1 -->
+                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                        <h4 class="font-medium text-blue-800 mb-2">📝 For User 1 Information Only</h4>
+                        <p class="text-sm text-blue-700">
+                            This section provides information about the Zero Income Affidavit that User 2 will need to complete if applicable. 
+                            User 2 will fill out all the actual affidavit fields during their signing process.
+                        </p>
+                    </div>
+
+                    <!-- Account Holder Name (User 2 will complete) -->
+                    <div class="p-4 bg-orange-50 border border-orange-200 rounded-md">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Holder Name (User 2 will complete)</label>
+                        <div class="px-3 py-2 border-2 border-dashed border-orange-300 rounded-md bg-white min-h-[40px] flex items-center text-sm text-orange-600">
+                            User 2 will enter the account holder's full name
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">This should match the name in the affidavit statement above</p>
+                    </div>
+
+                    <!-- Household Members with No Income (User 2 will complete) -->
+                    <div class="p-4 bg-orange-50 border border-orange-200 rounded-md">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            List of household members with no income (User 2 will complete)
+                        </label>
+                        <div class="p-3 bg-gray-50 border border-gray-200 rounded-md mb-2">
+                            <p class="text-xs font-medium text-gray-600 mb-1">Note: User 2 will list all people in household who are over age 18 with no income</p>
+                            <p class="text-xs text-gray-500">One name per line</p>
+                        </div>
+                        <div class="px-3 py-2 border-2 border-dashed border-orange-300 rounded-md bg-white min-h-[120px] flex items-center text-sm text-orange-600">
+                            User 2 will enter names of household members with no income
+                        </div>
+                    </div>
+
+                    <!-- Supporting Documentation Notice -->
+                    <div class="p-4 bg-orange-50 border border-orange-200 rounded-md">
+                        <p class="text-sm text-orange-800">
+                            <strong>Important:</strong> I understand that the Home Energy Solutions - Income Eligible program may request supporting documentation regarding my household income. I affirm that the information indicated on this form is accurate.
+                        </p>
+                    </div>
+
+                    <!-- Signature Section -->
+                    <div class="border-t pt-6">
+                        <h4 class="font-medium text-gray-900 mb-4">Affidavit Signature (User 2 will complete)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-orange-50 border border-orange-200 rounded-md">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Signature:</label>
+                                <div class="px-3 py-2 border-2 border-dashed border-orange-300 rounded-md bg-white min-h-[40px] flex items-center text-sm text-orange-600">
+                                    Digital signature required (User 2)
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Printed Name:</label>
+                                <input type="text" name="affidavit_printed_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Will be filled by User 2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Date:</label>
+                                <input type="date" name="affidavit_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Telephone:</label>
+                                <input type="tel" name="affidavit_telephone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Will be filled by User 2">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Final Affirmation (User 2 will complete) -->
+                    <div class="p-4 bg-orange-50 border border-orange-200 rounded-md">
+                        <h4 class="font-medium text-gray-700 mb-2">Final Affirmation (User 2 will complete)</h4>
+                        <div class="p-3 bg-white border-2 border-dashed border-orange-300 rounded-md">
+                            <p class="text-sm text-orange-600">
+                                User 2 will confirm understanding of the Zero Income Affidavit requirements and affirm that all information provided is accurate.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between items-center bg-white shadow sm:rounded-lg px-4 py-3">
+            <button type="button" id="prev-btn" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Previous
+            </button>
+            <div class="flex space-x-2">
+                <button type="button" id="next-btn" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                    Next
+                </button>
+                <button type="submit" id="submit-btn" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 hidden">
+                    Submit Application
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden field for PDF fields data -->
+        <input type="hidden" name="pdf_fields" id="pdf_fields" value="">
     </form>
 </div>
 
 <script>
-let currentDocumentId = null;
-let pdfFields = [];
-
-// Test function for debugging
-function testAPI() {
-    console.log('🧪 Testing API connectivity...');
-    fetch('/api/extract-fields', { method: 'POST' })
-    .then(response => response.json())
-    .then(data => {
-        console.log('API test result:', data);
-    })
-    .catch(error => {
-        console.error('API test failed:', error);
-    });
-}
-
-// File upload handling
-function handleFileSelect(input) {
-    console.log('🔍 handleFileSelect called with input:', input);
-    console.log('🔍 Input files:', input.files);
-    console.log('🔍 Input files length:', input.files.length);
+document.addEventListener('DOMContentLoaded', function() {
+    let currentSection = 1;
+    const totalSections = 5;
     
-    const file = input.files[0];
-    if (file) {
-        console.log('📁 File selected:', file.name, file.size, 'bytes');
-        
-        // Show file preview
-        document.getElementById('file-name').textContent = file.name;
-        document.getElementById('file-size').textContent = formatFileSize(file.size);
-        document.getElementById('file-preview').classList.remove('hidden');
-        
-        // Show PDF editor section
-        document.getElementById('pdf-editor').classList.remove('hidden');
-        
-        // Start PDF processing immediately
-        console.log('⏳ Starting PDF processing in 1 second...');
-        setTimeout(() => {
-            loadPDFFields();
-        }, 1000);
-        
-        // Scroll to editor
-        document.getElementById('pdf-editor').scrollIntoView({ behavior: 'smooth' });
-    } else {
-        console.warn('⚠️ No file selected');
-    }
-}
-
-function loadPDFFields() {
-    console.log('🔄 Starting PDF field extraction...');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const currentSectionSpan = document.getElementById('current-section');
+    const progressBar = document.getElementById('progress-bar');
     
-    const fileInput = document.getElementById('pdf_file');
-    if (!fileInput.files[0]) {
-        console.error('❌ No PDF file selected');
-        showErrorMessage('No PDF file selected');
-        return;
-    }
-    
-    const file = fileInput.files[0];
-    console.log(`📄 Processing file: ${file.name} (${file.size} bytes)`);
-    
-    const formData = new FormData();
-    formData.append('pdf_file', file);
-    
-    // Create separate FormData objects for each request
-    const formDataFields = new FormData();
-    formDataFields.append('pdf_file', fileInput.files[0]);
-    
-    const formDataPreview = new FormData();
-    formDataPreview.append('pdf_file', fileInput.files[0]);
-    
-    // Extract PDF fields first, then preview
-    console.log('🚀 Calling /api/extract-fields...');
-    fetch('/api/extract-fields', {
-        method: 'POST',
-        body: formDataFields
-    })
-    .then(response => {
-        console.log('📡 Extract fields response status:', response.status);
-        return response.json();
-    })
-    .then(fieldsData => {
-        console.log('✅ Fields API response:', fieldsData);
-        
-        // Now get preview
-        console.log('🚀 Calling /api/pdf-preview-upload...');
-        return fetch('/api/pdf-preview-upload', {
-            method: 'POST',
-            body: formDataPreview
-        })
-        .then(response => {
-            console.log('📡 Preview response status:', response.status);
-            return response.json();
-        })
-        .then(previewData => {
-            console.log('✅ Preview API response:', previewData);
-            return [fieldsData, previewData];
+    function showSection(sectionNum) {
+        // Hide all sections
+        document.querySelectorAll('.section-container').forEach(section => {
+            section.classList.add('hidden');
         });
-    })
-    .then(([fieldsData, previewData]) => {
-        console.log('✅ Received API responses:');
-        console.log('   Fields data:', fieldsData);
-        console.log('   Preview data:', previewData);
         
-        // Hide loading
-        document.getElementById('loading-fields').classList.add('hidden');
+        // Show current section
+        document.getElementById(`section-${sectionNum}`).classList.remove('hidden');
         
-        // Handle PDF preview
-        if (previewData.preview_url && !previewData.error) {
-            console.log('✅ Loading PDF preview...');
-            loadPDFPreview(
-                previewData.preview_url, 
-                previewData.pdf_info, 
-                previewData.current_page || 1,
-                previewData.file_path
-            );
+        // Update progress
+        currentSectionSpan.textContent = sectionNum;
+        progressBar.style.width = `${(sectionNum / totalSections) * 100}%`;
+        
+        // Update button states
+        prevBtn.disabled = sectionNum === 1;
+        
+        if (sectionNum === totalSections) {
+            nextBtn.classList.add('hidden');
+            submitBtn.classList.remove('hidden');
         } else {
-            console.warn('❌ PDF preview failed:', previewData.error);
+            nextBtn.classList.remove('hidden');
+            submitBtn.classList.add('hidden');
         }
-        
-        // Handle PDF fields
-        if (fieldsData.error) {
-            console.error('❌ PDF fields extraction error:', fieldsData.error);
-            showErrorMessage('Error extracting PDF fields: ' + fieldsData.error);
-            document.getElementById('no-fields').classList.remove('hidden');
-            return;
-        }
-        
-        if (fieldsData.fields && fieldsData.fields.length > 0) {
-            pdfFields = fieldsData.fields;
-            console.log('📋 Loaded PDF fields:', pdfFields.length);
-            pdfFields.forEach((field, index) => {
-                console.log(`   ${index + 1}. ${field.name} (${field.id}) → ${field.assigned_to} [${field.value || 'empty'}]`);
-            });
-            document.getElementById('pdf-fields-list').classList.remove('hidden');
-            renderPDFFields();
-            showNotification(`Successfully detected ${fieldsData.fields.length} fields from your PDF!`, 'success');
-        } else {
-            console.warn('⚠️ No fields found in PDF');
-            // No fields found
-            document.getElementById('no-fields').classList.remove('hidden');
-            showNotification('No form fields detected in this PDF. You can add custom fields manually.', 'info');
-        }
-    })
-    .catch(error => {
-        console.error('❌ Error processing PDF:', error);
-        document.getElementById('loading-fields').classList.add('hidden');
-        document.getElementById('no-fields').classList.remove('hidden');
-        showErrorMessage('Failed to analyze PDF. You can add custom fields manually.');
-    });
-}
-
-// Global variables for page navigation
-let currentPdfInfo = null;
-let currentFilePath = null;
-let currentPage = 1;
-
-function loadPDFPreview(previewUrl, pdfInfo, currentPageNum = 1, filePath = null) {
-    const container = document.getElementById('pdf-preview-container');
-    
-    // Store PDF info globally for navigation
-    currentPdfInfo = pdfInfo;
-    currentFilePath = filePath;
-    currentPage = currentPageNum;
-    
-    if (previewUrl) {
-        const pageCount = pdfInfo?.page_count || 1;
-        const hasMultiplePages = pageCount > 1;
-        
-        container.innerHTML = `
-            <div class="w-full max-w-full">
-                ${hasMultiplePages ? `
-                    <!-- Page Navigation Controls -->
-                    <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg border">
-                        <button id="prev-page" 
-                                onclick="navigateToPage(${currentPage - 1})"
-                                class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                ${currentPage <= 1 ? 'disabled' : ''}>
-                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            Previous
-                        </button>
-                        
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-gray-600">Page</span>
-                            <input type="number" 
-                                   id="page-input"
-                                   value="${currentPage}" 
-                                   min="1" 
-                                   max="${pageCount}"
-                                   class="w-16 px-2 py-1 text-sm text-center border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                                   onchange="navigateToPage(parseInt(this.value))"
-                                   onkeypress="if(event.key==='Enter') navigateToPage(parseInt(this.value))">
-                            <span class="text-sm text-gray-600">of ${pageCount}</span>
-                        </div>
-                        
-                        <button id="next-page" 
-                                onclick="navigateToPage(${currentPage + 1})"
-                                class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                ${currentPage >= pageCount ? 'disabled' : ''}>
-                            Next
-                            <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                        </button>
-                    </div>
-                ` : ''}
-                
-                <!-- PDF Image -->
-                <div class="relative">
-                    <img src="${previewUrl}" 
-                         alt="PDF Preview - Page ${currentPage}"
-                         class="w-full h-auto rounded-lg shadow-sm border border-gray-200"
-                         style="max-height: 600px; object-fit: contain;">
-                    ${hasMultiplePages ? `
-                        <div class="absolute top-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
-                            ${currentPage} / ${pageCount}
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <!-- PDF Info -->
-                <div class="mt-2 text-sm text-gray-500 text-center">
-                    Page ${currentPage} of ${pageCount} • ${pdfInfo?.form_field_count || 0} form fields detected
-                    ${hasMultiplePages ? '<br><span class="text-xs">Use navigation controls above to browse pages</span>' : ''}
-                </div>
-            </div>
-        `;
-        console.log(`✅ PDF preview loaded successfully - Page ${currentPage} of ${pageCount}`);
-    } else {
-        container.innerHTML = `
-            <div class="text-center">
-                <svg class="mx-auto h-16 w-16 text-red-400 mb-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                </svg>
-                <p class="text-gray-500">Failed to load PDF preview</p>
-            </div>
-        `;
-    }
-}
-
-function navigateToPage(pageNum) {
-    if (!currentPdfInfo || !currentFilePath) {
-        console.error('❌ No PDF loaded for navigation');
-        return;
     }
     
-    const pageCount = currentPdfInfo.page_count || 1;
-    
-    // Validate page number
-    if (pageNum < 1 || pageNum > pageCount) {
-        console.warn(`⚠️ Invalid page number: ${pageNum}. Valid range: 1-${pageCount}`);
-        return;
-    }
-    
-    if (pageNum === currentPage) {
-        console.log(`ℹ️ Already on page ${pageNum}`);
-        return;
-    }
-    
-    console.log(`🔄 Navigating to page ${pageNum}...`);
-    
-    // Show loading state
-    const container = document.getElementById('pdf-preview-container');
-    const img = container.querySelector('img');
-    if (img) {
-        img.style.opacity = '0.5';
-    }
-    
-    // Call API to get specific page
-    fetch(`/api/pdf-page/${encodeURIComponent(currentFilePath)}/${pageNum}`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.preview_url && !data.error) {
-            console.log(`✅ Loaded page ${pageNum}`);
-            loadPDFPreview(
-                data.preview_url,
-                data.pdf_info,
-                data.current_page,
-                currentFilePath
-            );
-        } else {
-            throw new Error(data.error || 'Failed to load page');
-        }
-    })
-    .catch(error => {
-        console.error(`❌ Error loading page ${pageNum}:`, error);
-        showErrorMessage(`Failed to load page ${pageNum}: ${error.message}`);
-        
-        // Restore image opacity
-        if (img) {
-            img.style.opacity = '1';
+    nextBtn.addEventListener('click', function() {
+        if (currentSection < totalSections) {
+            currentSection++;
+            showSection(currentSection);
         }
     });
-}
-
-// Keyboard navigation support
-document.addEventListener('keydown', function(event) {
-    // Only handle keyboard navigation when PDF preview is visible and focused
-    const previewContainer = document.getElementById('pdf-preview-container');
-    if (!previewContainer || !currentPdfInfo || currentPdfInfo.page_count <= 1) {
-        return;
-    }
     
-    // Check if user is typing in an input field
-    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
-        return;
-    }
-    
-    switch(event.key) {
-        case 'ArrowLeft':
-        case 'ArrowUp':
-            if (currentPage > 1) {
-                event.preventDefault();
-                navigateToPage(currentPage - 1);
-            }
-            break;
-        case 'ArrowRight':
-        case 'ArrowDown':
-            if (currentPage < currentPdfInfo.page_count) {
-                event.preventDefault();
-                navigateToPage(currentPage + 1);
-            }
-            break;
-        case 'Home':
-            if (currentPage > 1) {
-                event.preventDefault();
-                navigateToPage(1);
-            }
-            break;
-        case 'End':
-            if (currentPage < currentPdfInfo.page_count) {
-                event.preventDefault();
-                navigateToPage(currentPdfInfo.page_count);
-            }
-            break;
-    }
-});
-
-function showErrorMessage(message) {
-    showNotification(message, 'error');
-}
-
-function renderPDFFields() {
-    const container = document.getElementById('pdf-fields-list');
-    container.innerHTML = '';
-    
-    pdfFields.forEach(field => {
-        const fieldElement = createFieldElement(field);
-        container.appendChild(fieldElement);
-    });
-}
-
-function createFieldElement(field) {
-    const div = document.createElement('div');
-    div.className = `p-4 border rounded-lg ${field.assigned_to === 'user1' ? 'border-blue-300 bg-blue-50' : 'border-orange-300 bg-orange-50'}`;
-    
-    div.innerHTML = `
-        <div class="flex justify-between items-start">
-            <div class="flex-1">
-                <h5 class="font-medium text-gray-900">${field.name}</h5>
-                <p class="text-sm text-gray-600 capitalize">${field.type} field</p>
-                ${field.assigned_to === 'user1' ? 
-                    (field.type === 'radio' ? 
-                        `<div class="mt-2 space-y-2">
-                            <label class="inline-flex items-center">
-                                <input type="radio" 
-                                       name="radio_${field.id}" 
-                                       value="yes"
-                                       class="form-radio text-blue-600 focus:ring-blue-500"
-                                       ${field.value === 'yes' || field.value === 'true' ? 'checked' : ''}
-                                       onchange="updateFieldValue('${field.id}', 'yes')">
-                                <span class="ml-2 text-sm text-gray-700">Yes</span>
-                            </label>
-                            <label class="inline-flex items-center">
-                                <input type="radio" 
-                                       name="radio_${field.id}" 
-                                       value="no"
-                                       class="form-radio text-blue-600 focus:ring-blue-500"
-                                       ${field.value === 'no' || field.value === 'false' || field.value === 'Off' || !field.value ? 'checked' : ''}
-                                       onchange="updateFieldValue('${field.id}', 'no')">
-                                <span class="ml-2 text-sm text-gray-700">No</span>
-                            </label>
-                        </div>` 
-                    : field.type === 'checkbox' ? 
-                        `<div class="mt-2">
-                            <label class="inline-flex items-center">
-                                <input type="checkbox" 
-                                       class="form-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                       ${field.value === 'true' || field.value === true || field.value === 'yes' ? 'checked' : ''}
-                                       onchange="updateFieldValue('${field.id}', this.checked ? 'true' : 'false')">
-                                <span class="ml-2 text-sm text-gray-700">${field.name}</span>
-                            </label>
-                        </div>` 
-                    : `<input type="${field.type === 'textarea' ? 'text' : field.type}" 
-                             class="mt-2 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                             placeholder="Enter value..."
-                             value="${field.value || ''}"
-                             onchange="updateFieldValue('${field.id}', this.value)"
-                             onkeyup="updateFieldValue('${field.id}', this.value)"
-                             onblur="updateFieldValue('${field.id}', this.value)">`)
-                : `
-                    <p class="text-sm text-orange-600 mt-1">📝 Assigned to User 2</p>
-                `}
-            </div>
-            <div class="ml-4">
-                <select onchange="reassignField('${field.id}', this.value)" 
-                        class="text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                    <option value="user1" ${field.assigned_to === 'user1' ? 'selected' : ''}>My Field</option>
-                    <option value="user2" ${field.assigned_to === 'user2' ? 'selected' : ''}>User 2 Field</option>
-                </select>
-            </div>
-        </div>
-    `;
-    
-    return div;
-}
-
-function reassignField(fieldId, newAssignment) {
-    // Update field assignment
-    const field = pdfFields.find(f => f.id === fieldId);
-    if (field) {
-        field.assigned_to = newAssignment;
-        renderPDFFields();
-        
-        // Show feedback
-        showNotification(`Field "${field.name}" assigned to ${newAssignment === 'user1' ? 'you' : 'User 2'}`, 'success');
-    }
-}
-
-function updateFieldValue(fieldId, value) {
-    console.log(`🔄 updateFieldValue called: ${fieldId} = '${value}'`);
-    const field = pdfFields.find(f => f.id === fieldId);
-    if (field) {
-        const oldValue = field.value;
-        field.value = value;
-        console.log(`   ✅ Updated '${field.name}': '${oldValue}' → '${value}'`);
-    } else {
-        console.log(`   ❌ Field not found: ${fieldId}`);
-    }
-}
-
-function showCustomFieldForm() {
-    document.getElementById('manual-field-section').classList.remove('hidden');
-}
-
-function cancelCustomField() {
-    document.getElementById('manual-field-section').classList.add('hidden');
-    document.getElementById('custom-field-name').value = '';
-    document.getElementById('custom-field-type').value = 'text';
-    document.getElementById('custom-field-user').value = 'user1';
-}
-
-function addCustomField() {
-    const name = document.getElementById('custom-field-name').value.trim();
-    const type = document.getElementById('custom-field-type').value;
-    const assignedTo = document.getElementById('custom-field-user').value;
-    
-    if (!name) {
-        alert('Please enter a field name');
-        return;
-    }
-    
-    // Create new field
-    const newField = {
-        id: `custom_${Date.now()}`,
-        name: name,
-        type: type,
-        value: '',
-        assigned_to: assignedTo,
-        page: 0,
-        source: 'manual',
-        position: {
-            x: 100 + (pdfFields.length % 2) * 250,
-            y: 700 - Math.floor(pdfFields.length / 2) * 60,
-            width: 200,
-            height: type === 'textarea' ? 60 : 30
+    prevBtn.addEventListener('click', function() {
+        if (currentSection > 1) {
+            currentSection--;
+            showSection(currentSection);
         }
-    };
-    
-    // Add to fields array
-    pdfFields.push(newField);
-    
-    // Re-render fields
-    renderPDFFields();
-    
-    // Clear form and hide
-    cancelCustomField();
-    
-    // Show success message
-    showNotification(`Field "${name}" added successfully`, 'success');
-}
-
-function showNotification(message, type) {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg ${type === 'success' ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'}`;
-    notification.innerHTML = `
-        <div class="flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                ${type === 'success' ? 
-                    '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>' :
-                    '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>'
-                }
-            </svg>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
-
-function clearFile() {
-    document.getElementById('pdf_file').value = '';
-    document.getElementById('file-preview').classList.add('hidden');
-    document.getElementById('pdf-editor').classList.add('hidden');
-    pdfFields = [];
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-// Form submission
-document.getElementById('user1Form').addEventListener('submit', function(e) {
-    // Debug: Log what we're submitting
-    console.log('🚀 User 1 form submission triggered');
-    console.log('📊 pdfFields array:', pdfFields);
-    console.log('📋 Fields count:', pdfFields.length);
-    
-    // Show field values being submitted
-    const fieldsWithValues = pdfFields.filter(f => f.value);
-    const fieldsWithoutValues = pdfFields.filter(f => !f.value);
-    
-    console.log('✅ Fields WITH values:', fieldsWithValues.length);
-    fieldsWithValues.forEach(field => {
-        console.log(`   - ${field.name}: '${field.value}' → ${field.assigned_to}`);
     });
     
-    console.log('⭕ Fields WITHOUT values:', fieldsWithoutValues.length);
-    fieldsWithoutValues.forEach(field => {
-        console.log(`   - ${field.name}: (empty) → ${field.assigned_to}`);
+    // Form submission
+    document.getElementById('user1Form').addEventListener('submit', function(e) {
+        // Collect all form data and structure it
+        const formData = new FormData(this);
+        const formObject = {};
+        
+        for (let [key, value] of formData.entries()) {
+            formObject[key] = value;
+        }
+        
+        // Set the PDF fields data (empty for now, will be populated by field mapping)
+        document.getElementById('pdf_fields').value = JSON.stringify([]);
+        
+        console.log('Form submitted with data:', formObject);
     });
     
-    // Add field data to form
-    const fieldData = document.createElement('input');
-    fieldData.type = 'hidden';
-    fieldData.name = 'pdf_fields';
-    fieldData.value = JSON.stringify(pdfFields);
-    this.appendChild(fieldData);
-    
-    console.log('📤 Field data JSON length:', fieldData.value.length);
-    console.log('📤 Field data preview:', fieldData.value.substring(0, 200) + '...');
+    // Initialize first section
+    showSection(1);
 });
-
-// Drag and drop functionality
-const dropArea = document.getElementById('file-drop-area');
-
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, preventDefaults, false);
-});
-
-function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-['dragenter', 'dragover'].forEach(eventName => {
-    dropArea.addEventListener(eventName, highlight, false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, unhighlight, false);
-});
-
-function highlight() {
-    dropArea.classList.add('border-blue-400', 'bg-blue-50');
-}
-
-function unhighlight() {
-    dropArea.classList.remove('border-blue-400', 'bg-blue-50');
-}
-
-dropArea.addEventListener('drop', handleDrop, false);
-
-function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    
-    if (files.length > 0) {
-        document.getElementById('pdf_file').files = files;
-        handleFileSelect(document.getElementById('pdf_file'));
-    }
-}
 </script>
 {% endblock %}

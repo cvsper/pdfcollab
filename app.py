@@ -844,8 +844,86 @@ def generate_completed_pdf(document):
         print("🔄 Falling back to summary PDF generation...")
         return generate_summary_pdf(document)
 
+# Section 5 Widget Positions - Adjusted 10 right, 10 down
+SECTION5_WIDGET_POSITIONS = [
+    {"field": "account_holder_name_affidavit", "x": 155, "y": 145, "width": 250, "height": 25},
+    {"field": "household_member_names_no_income", "x": 45, "y": 265, "width": 450, "height": 80},
+    {"field": "affidavit_signature", "x": 50, "y": 480, "width": 200, "height": 30},
+    {"field": "printed_name_affidavit", "x": 315, "y": 490, "width": 230, "height": 25},
+    {"field": "date_affidavit", "x": 50, "y": 535, "width": 150, "height": 25},
+    {"field": "telephone_affidavit", "x": 315, "y": 535, "width": 150, "height": 25}
+]
+
+def fill_section5_with_exact_positions(doc, user2_data):
+    """Fill Section 5 fields using exact widget positions that worked perfectly"""
+    try:
+        import fitz
+        
+        # Find the Zero Income Affidavit page (usually page 5)
+        affidavit_page = None
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            text = page.get_text().lower()
+            if "zero income affidavit" in text or "income affidavit" in text:
+                affidavit_page = page_num
+                break
+        
+        if affidavit_page is None:
+            # Default to last page
+            affidavit_page = len(doc) - 1
+        
+        page = doc[affidavit_page]
+        
+        # Map user2_data to Section 5 fields
+        section5_mapping = {
+            "account_holder_name_affidavit": user2_data.get("account_holder_name_affidavit", ""),
+            "household_member_names_no_income": user2_data.get("household_member_names_no_income", ""),
+            "affidavit_signature": user2_data.get("affidavit_signature", ""),
+            "printed_name_affidavit": user2_data.get("printed_name_affidavit", ""),
+            "date_affidavit": user2_data.get("date_affidavit", ""),
+            "telephone_affidavit": user2_data.get("telephone_affidavit", "")
+        }
+        
+        filled_count = 0
+        
+        # Fill each Section 5 field at exact position
+        for pos in SECTION5_WIDGET_POSITIONS:
+            field_name = pos["field"]
+            field_value = section5_mapping.get(field_name, "")
+            
+            if field_value:
+                x, y, width, height = pos["x"], pos["y"], pos["width"], pos["height"]
+                rect = fitz.Rect(x, y, x + width, y + height)
+                
+                # Determine font size based on field type
+                if field_name == "household_member_names_no_income":
+                    fontsize = 9  # Smaller for multi-line text
+                else:
+                    fontsize = 11
+                
+                # Add the field value at exact position
+                text_annot = page.add_freetext_annot(
+                    rect,
+                    field_value,
+                    fontsize=fontsize,
+                    fontname="helv",
+                    text_color=(0, 0, 0),
+                    fill_color=(1, 1, 1),  # White background
+                    border_color=(0, 0, 0)
+                )
+                text_annot.update()
+                filled_count += 1
+                print(f"✅ Section 5 field positioned: {field_name} = {field_value}")
+        
+        print(f"📄 Section 5: Filled {filled_count} fields using exact positions on page {affidavit_page + 1}")
+        return filled_count > 0
+        
+    except Exception as e:
+        print(f"❌ Error filling Section 5 with exact positions: {e}")
+        return False
+
 def fill_pdf_fields_advanced(pdf_path, document, output_path):
-    """Advanced PDF field filling with better field matching"""
+    """Advanced PDF field filling with better field matching and Section 5 positioning"""
     try:
         with open(pdf_path, 'rb') as input_file:
             pdf_reader = PyPDF2.PdfReader(input_file)
@@ -974,6 +1052,25 @@ def fill_pdf_fields_advanced(pdf_path, document, output_path):
                 pdf_writer.write(output_file)
             
             print(f"✅ Successfully filled {filled_count} fields in original PDF")
+            
+            # Now add Section 5 fields using exact positions
+            try:
+                import fitz
+                if 'user2_data' in document and document['user2_data']:
+                    print("🧾 Adding Section 5 fields with exact positions...")
+                    
+                    # Open the filled PDF with PyMuPDF for Section 5 positioning
+                    fitz_doc = fitz.open(output_path)
+                    section5_success = fill_section5_with_exact_positions(fitz_doc, document['user2_data'])
+                    
+                    if section5_success:
+                        # Save the updated PDF with Section 5 fields
+                        fitz_doc.save(output_path)
+                        print("✅ Section 5 fields added successfully")
+                    
+                    fitz_doc.close()
+            except Exception as e:
+                print(f"⚠️  Could not add Section 5 positioning: {e}")
             
             # Only consider it successful if we actually filled some fields
             if filled_count > 0:
@@ -1149,156 +1246,241 @@ def start_workflow():
 @app.route('/user1', methods=['GET', 'POST'])
 @login_required
 def user1_interface():
-    """User 1 interface - matches your React UserOneInterface component"""
+    """User 1 interface - uses homeworks.pdf automatically"""
     if request.method == 'POST':
-        if 'pdf_file' not in request.files:
-            flash('No file selected', 'error')
+        # Use the homworks.pdf file automatically instead of file upload
+        homeworks_pdf_path = os.path.join(os.path.dirname(__file__), 'homworks.pdf')
+        
+        if not os.path.exists(homeworks_pdf_path):
+            flash('homworks.pdf not found in application directory', 'error')
             return redirect(request.url)
         
-        file = request.files['pdf_file']
-        if file.filename == '':
-            flash('No file selected', 'error')
+        document_id = str(uuid.uuid4())
+        filename = 'homworks.pdf'
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{document_id}_{filename}")
+        
+        # Copy the homeworks.pdf to the uploads directory
+        import shutil
+        shutil.copy2(homeworks_pdf_path, file_path)
+        
+        # Get form data from User 1 (sections 1-5)
+        user1_data = {
+            # Section 1: Property Information
+            'property_address': request.form.get('property_address', ''),
+            'apartment_number': request.form.get('apartment_number', ''),
+            'city': request.form.get('city', ''),
+            'state': request.form.get('state', ''),
+            'zip_code': request.form.get('zip_code', ''),
+            'apartments_count': request.form.get('apartments_count', ''),
+            'dwelling_type': request.form.get('dwelling_type', ''),
+            
+            # Section 2: Applicant and Energy Information
+            'first_name': request.form.get('first_name', ''),
+            'last_name': request.form.get('last_name', ''),
+            'telephone': request.form.get('telephone', ''),
+            'email': request.form.get('email', ''),
+            'heating_fuel': request.form.get('heating_fuel', ''),
+            'applicant_type': request.form.get('applicant_type', ''),
+            'electric_utility': request.form.get('electric_utility', ''),
+            'gas_utility': request.form.get('gas_utility', ''),
+            'electric_account': request.form.get('electric_account', ''),
+            'gas_account': request.form.get('gas_account', ''),
+            
+            # Section 3: Qualification Information
+            'qualification_option': request.form.get('qualification_option', ''),
+            'utility_program': request.form.getlist('utility_program'),
+            'documentation': request.form.getlist('documentation'),
+            'household_size': request.form.get('household_size', ''),
+            'adults_count': request.form.get('adults_count', ''),
+            'annual_income': request.form.get('annual_income', ''),
+            
+            # Section 4: Authorization
+            'user2_name': request.form.get('user2_name', ''),  # User 2's name for signature
+            'user2_email': request.form.get('user2_email', ''),  # User 2's email for invitations
+            'owner_name': request.form.get('owner_name', ''),
+            'owner_address': request.form.get('owner_address', ''),
+            'owner_telephone': request.form.get('owner_telephone', ''),
+            'owner_email': request.form.get('owner_email', '')
+            
+            # Note: Section 5 (Zero Income Affidavit) fields will be completed by User 2
+        }
+            
+        # Extract PDF fields
+        pdf_analysis = extract_pdf_fields(file_path)
+        if "error" in pdf_analysis:
+            flash(f'Error processing PDF: {pdf_analysis["error"]}', 'error')
             return redirect(request.url)
         
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            document_id = str(uuid.uuid4())
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{document_id}_{filename}")
-            file.save(file_path)
+        # Map form data to PDF fields and assign User 1/User 2
+        def map_form_data_to_pdf_fields(form_data, pdf_fields):
+            """Map the sectioned form data to PDF fields and assign to users"""
             
-            # Get form data from User 1
-            user1_data = {
-                'name': request.form.get('user2_name', ''),  # Now collecting User 2's name
-                'email': request.form.get('user2_email', ''), # Now collecting User 2's email
-                'user2_email': request.form.get('user2_email', ''),  # User 2's email for invitations
-                'employee_id': request.form.get('employee_id', ''),
-                'department': request.form.get('department', ''),
-                'position': request.form.get('position', ''),
-                'start_date': request.form.get('start_date', ''),
-                'salary': request.form.get('salary', ''),
-                'employment_type': request.form.get('employment_type', ''),
-                'address': request.form.get('address', '')
-            }
+            # User 1 fills most fields, User 2 handles signatures and all Section 5 (Zero Income Affidavit)
+            user1_fields = [
+                'property_address', 'apartment_number', 'city', 'state', 'zip_code',
+                'apartments_count', 'dwelling_type', 'first_name', 'last_name',
+                'telephone', 'email', 'heating_fuel', 'applicant_type',
+                'electric_utility', 'gas_utility', 'electric_account', 'gas_account',
+                'qualification_option', 'household_size', 'adults_count', 'annual_income',
+                'owner_name', 'owner_address', 'owner_telephone', 'owner_email'
+            ]
             
-            # Extract PDF fields
-            pdf_analysis = extract_pdf_fields(file_path)
-            if "error" in pdf_analysis:
-                flash(f'Error processing PDF: {pdf_analysis["error"]}', 'error')
-                return redirect(request.url)
+            # User 2 handles signatures, authorization, and ALL Section 5 (Zero Income Affidavit) fields
+            user2_signature_fields = [
+                'signature', 'applicant_signature', 'date', 'owner_signature',
+                'account_holder_name_affidavit', 'household_member_names_no_income', 'affidavit_signature', 
+                'printed_name_affidavit', 'date_affidavit', 'telephone_affidavit', 'affidavit_confirmation'
+            ]
             
-            # Process PDF fields data from User 1
-            pdf_fields_data = request.form.get('pdf_fields')
-            print(f"📋 PDF fields data received: {pdf_fields_data is not None}")
-            
-            if pdf_fields_data:
-                try:
-                    # Parse the PDF fields JSON data from frontend
-                    frontend_fields = json.loads(pdf_fields_data)
-                    print(f"📊 Parsed {len(frontend_fields)} fields from frontend")
-                    
-                    # Debug: Show what we received
-                    for i, field in enumerate(frontend_fields[:3]):  # Show first 3
-                        print(f"   Frontend field {i+1}: {field.get('name', 'unnamed')} = '{field.get('value', '')}' → {field.get('assigned_to', 'unassigned')}")
-                    
-                    # Update the extracted fields with User 1's assignments and values
-                    for frontend_field in frontend_fields:
-                        # Find corresponding field in extracted fields
-                        for extracted_field in pdf_analysis['fields']:
-                            if extracted_field['id'] == frontend_field['id']:
-                                # Update assignment and value
-                                extracted_field['assigned_to'] = frontend_field.get('assigned_to', extracted_field['assigned_to'])
-                                extracted_field['value'] = frontend_field.get('value', '')
-                                if frontend_field.get('value'):
-                                    print(f"✅ User 1 filled '{extracted_field['name']}': '{frontend_field['value']}'")
-                                break
-                        else:
-                            # This is a custom field added by User 1
-                            pdf_analysis['fields'].append(frontend_field)
-                            if frontend_field.get('value'):
-                                print(f"✅ User 1 added custom field '{frontend_field['name']}': '{frontend_field['value']}'")
-                    
-                    print(f"📊 Final field summary:")
-                    for field in pdf_analysis['fields']:
-                        if field.get('value'):
-                            print(f"   ✅ {field['name']}: '{field['value']}' → {field['assigned_to']}")
-                        else:
-                            print(f"   ⭕ {field['name']}: (empty) → {field['assigned_to']}")
-                        
-                except json.JSONDecodeError as e:
-                    print(f"❌ Error parsing PDF fields JSON: {e}")
-            else:
-                print("⚠️  No PDF fields data received from User 1")
-            
-            # Add to mock data
-            new_document = {
-                'id': document_id,
-                'name': filename,
-                'status': 'Pending User 2',
-                'lastUpdated': 'Just now',
-                'created_at': datetime.now().isoformat(),
-                'created_by': current_user.id if current_user.is_authenticated else None,
-                'user1_data': user1_data,
-                'file_path': file_path,
-                'pdf_fields': pdf_analysis['fields'],
-                'field_assignments': {field['id']: field['assigned_to'] for field in pdf_analysis['fields']}
-            }
-            
-            print(f"📄 Adding new document to MOCK_DOCUMENTS:")
-            print(f"   📋 Document ID: {document_id}")
-            print(f"   📋 Document name: {filename}")
-            print(f"   📋 PDF fields count: {len(pdf_analysis['fields'])}")
-            
-            # Show field values being saved
-            fields_with_values = [f for f in pdf_analysis['fields'] if f.get('value')]
-            fields_without_values = [f for f in pdf_analysis['fields'] if not f.get('value')]
-            
-            print(f"   ✅ Fields with values: {len(fields_with_values)}")
-            for field in fields_with_values:
-                print(f"      - {field['name']}: '{field['value']}' → {field['assigned_to']}")
-            
-            print(f"   ⭕ Fields without values: {len(fields_without_values)}")
-            for field in fields_without_values:
-                print(f"      - {field['name']}: (empty) → {field['assigned_to']}")
-            
-            MOCK_DOCUMENTS.append(new_document)
-            
-            # Send invitation email to User 2 immediately
-            user2_email = user1_data.get('user2_email')
-            if user2_email and is_email_configured():
-                try:
-                    # Generate invitation URL
-                    invitation_url = url_for('user2_interface', document_id=document_id, _external=True)
-                    
-                    # Send invitation email
-                    success = send_document_invitation_email(
-                        document_data=new_document,
-                        recipient_email=user2_email,
-                        sender_name=user1_data.get('name', 'User 1'),
-                        invitation_url=invitation_url
-                    )
-                    
-                    if success:
-                        # Update document to mark invitation as sent
-                        new_document['invitation_sent'] = True
-                        new_document['invitation_sent_at'] = datetime.now().isoformat()
-                        flash(f'Document uploaded and invitation sent to {user2_email}!', 'success')
-                    else:
-                        flash('Document uploaded but failed to send invitation email.', 'warning')
-                        
-                except Exception as e:
-                    print(f"Error sending invitation email: {e}")
-                    flash('Document uploaded but failed to send invitation email.', 'warning')
-            else:
-                if not user2_email:
-                    flash('Document uploaded but no email address provided for User 2.', 'warning')
+            # Update PDF fields with form data and assignments
+            for field in pdf_fields:
+                field_name_lower = field['name'].lower()
+                
+                # Check if this field matches any of our form data
+                for form_key, form_value in form_data.items():
+                    if form_key in field_name_lower or any(word in field_name_lower for word in form_key.split('_')):
+                        field['value'] = str(form_value) if form_value else ''
+                        field['assigned_to'] = 'user1' if form_key in user1_fields else 'user2'
+                        break
+                
+                # Assign signature fields to User 2
+                if any(sig_word in field_name_lower for sig_word in user2_signature_fields):
+                    field['assigned_to'] = 'user2'
+                    field['type'] = 'signature'
                 else:
-                    flash('Document uploaded but email service not configured.', 'warning')
+                    # Default assignment for other fields
+                    if field.get('assigned_to') is None:
+                        field['assigned_to'] = 'user1'
+            
+            return pdf_fields
+        
+        # Apply the field mapping
+        pdf_analysis['fields'] = map_form_data_to_pdf_fields(user1_data, pdf_analysis['fields'])
+        
+        # Process PDF fields data from User 1 (for any manual overrides)
+        pdf_fields_data = request.form.get('pdf_fields')
+        print(f"📋 PDF fields data received: {pdf_fields_data is not None}")
+        
+        if pdf_fields_data:
+            try:
+                # Parse the PDF fields JSON data from frontend
+                frontend_fields = json.loads(pdf_fields_data)
+                print(f"📊 Parsed {len(frontend_fields)} fields from frontend")
+                
+                # Debug: Show what we received
+                for i, field in enumerate(frontend_fields[:3]):  # Show first 3
+                    print(f"   Frontend field {i+1}: {field.get('name', 'unnamed')} = '{field.get('value', '')}' → {field.get('assigned_to', 'unassigned')}")
+                
+                # Update the extracted fields with User 1's assignments and values
+                for frontend_field in frontend_fields:
+                    # Find corresponding field in extracted fields
+                    for extracted_field in pdf_analysis['fields']:
+                        if extracted_field['id'] == frontend_field['id']:
+                            # Update assignment and value
+                            extracted_field['assigned_to'] = frontend_field.get('assigned_to', extracted_field['assigned_to'])
+                            extracted_field['value'] = frontend_field.get('value', '')
+                            if frontend_field.get('value'):
+                                print(f"✅ User 1 filled '{extracted_field['name']}': '{frontend_field['value']}'")
+                            break
+                    else:
+                        # This is a custom field added by User 1
+                        pdf_analysis['fields'].append(frontend_field)
+                        if frontend_field.get('value'):
+                            print(f"✅ User 1 added custom field '{frontend_field['name']}': '{frontend_field['value']}'")
+                
+                print(f"📊 Final field summary:")
+                for field in pdf_analysis['fields']:
+                    if field.get('value'):
+                        print(f"   ✅ {field['name']}: '{field['value']}' → {field['assigned_to']}")
+                    else:
+                        print(f"   ⭕ {field['name']}: (empty) → {field['assigned_to']}")
+                        
+            except json.JSONDecodeError as e:
+                print(f"❌ Error parsing PDF fields JSON: {e}")
+        else:
+            print("⚠️  No PDF fields data received from User 1")
+        
+        # Add to mock data
+        new_document = {
+            'id': document_id,
+            'name': filename,
+            'status': 'Pending User 2',
+            'lastUpdated': 'Just now',
+            'created_at': datetime.now().isoformat(),
+            'created_by': current_user.id if current_user.is_authenticated else None,
+            'user1_data': user1_data,
+            'file_path': file_path,
+            'pdf_fields': pdf_analysis['fields'],
+            'field_assignments': {field['id']: field['assigned_to'] for field in pdf_analysis['fields']}
+        }
+        
+        print(f"📄 Adding new document to MOCK_DOCUMENTS:")
+        print(f"   📋 Document ID: {document_id}")
+        print(f"   📋 Document name: {filename}")
+        print(f"   📋 PDF fields count: {len(pdf_analysis['fields'])}")
+        
+        # Show field values being saved
+        fields_with_values = [f for f in pdf_analysis['fields'] if f.get('value')]
+        fields_without_values = [f for f in pdf_analysis['fields'] if not f.get('value')]
+        
+        print(f"   ✅ Fields with values: {len(fields_with_values)}")
+        for field in fields_with_values:
+            print(f"      - {field['name']}: '{field['value']}' → {field['assigned_to']}")
+        
+        print(f"   ⭕ Fields without values: {len(fields_without_values)}")
+        for field in fields_without_values:
+            print(f"      - {field['name']}: (empty) → {field['assigned_to']}")
+        
+        MOCK_DOCUMENTS.append(new_document)
+        
+        # Send invitation email to User 2 immediately
+        user2_email = user1_data.get('user2_email')
+        if user2_email and is_email_configured():
+            try:
+                # Generate invitation URL
+                invitation_url = url_for('user2_interface', document_id=document_id, _external=True)
+                
+                # Send invitation email
+                success = send_document_invitation_email(
+                    document_data=new_document,
+                    recipient_email=user2_email,
+                    sender_name=user1_data.get('user2_name', 'User 1'),
+                    invitation_url=invitation_url
+                )
+                
+                if success:
+                    # Update document to mark invitation as sent
+                    new_document['invitation_sent'] = True
+                    new_document['invitation_sent_at'] = datetime.now().isoformat()
+                    flash(f'Application completed and invitation sent to {user2_email}!', 'success')
+                else:
+                    flash('Application completed but failed to send invitation email.', 'warning')
+                    
+            except Exception as e:
+                print(f"Error sending invitation email: {e}")
+                flash('Application completed but failed to send invitation email.', 'warning')
+        else:
+            if not user2_email:
+                flash('Application completed but no email address provided for User 2.', 'warning')
+            else:
+                flash('Application completed but email service not configured.', 'warning')
             
             return redirect(url_for('dashboard'))
-        else:
-            flash('Invalid file type. Please upload a PDF file.', 'error')
     
-    return render_template('user1_enhanced.html')
+    # For GET request, load homworks.pdf and extract fields for form display
+    homeworks_pdf_path = os.path.join(os.path.dirname(__file__), 'homworks.pdf')
+    
+    if not os.path.exists(homeworks_pdf_path):
+        flash('homworks.pdf not found in application directory', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Extract PDF fields for form structure
+    pdf_analysis = extract_pdf_fields(homeworks_pdf_path)
+    if "error" in pdf_analysis:
+        flash(f'Error processing PDF: {pdf_analysis["error"]}', 'error')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('user1_enhanced.html', pdf_fields=pdf_analysis.get('fields', []))
 
 @app.route('/send-invitation/<document_id>', methods=['POST'])
 @login_required
