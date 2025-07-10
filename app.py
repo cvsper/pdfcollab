@@ -1698,6 +1698,25 @@ def user2_interface(document_id):
             if value:
                 user2_data[key] = value
         
+        # Collect Section 5 (Zero Income Affidavit) fields directly
+        section5_fields = {
+            'account_holder_name_affidavit': request.form.get('account_holder_name_affidavit', ''),
+            'household_member_names_no_income': request.form.get('household_member_names_no_income', ''),
+            'affidavit_signature': request.form.get('affidavit_signature', ''),
+            'printed_name_affidavit': request.form.get('printed_name_affidavit', ''),
+            'date_affidavit': request.form.get('date_affidavit', ''),
+            'telephone_affidavit': request.form.get('telephone_affidavit', ''),
+            'affidavit_confirmation': request.form.get('affidavit_confirmation', '')
+        }
+        
+        # Add Section 5 fields to user2_data
+        for key, value in section5_fields.items():
+            if value:
+                user2_data[key] = value
+                print(f"✅ Section 5 field '{key}': '{value}'")
+            else:
+                print(f"⭕ Section 5 field '{key}': empty")
+        
         # Handle supporting documents
         supporting_docs = []
         if 'supporting_docs' in request.files:
