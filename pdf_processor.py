@@ -877,16 +877,20 @@ class PDFProcessor:
                     else:
                         fontsize = 11
                     
-                    # Insert text directly on the page
+                    # Use the same method as the working app.py version
                     rect = fitz.Rect(x, y, x + width, y + height)
-                    page.insert_textbox(
+                    
+                    # Add freetext annotation like in app.py
+                    text_annot = page.add_freetext_annot(
                         rect,
                         field_value,
                         fontsize=fontsize,
                         fontname="helv",
-                        color=(0, 0, 0),  # Black text
-                        align=0  # Left align
+                        text_color=(0, 0, 0),
+                        fill_color=(1, 1, 1),  # White background
+                        border_color=(0, 0, 0)
                     )
+                    text_annot.update()
                     
                     filled_count += 1
                     print(f"   ✅ Section 5 field positioned: {field_name} = {field_value}")
