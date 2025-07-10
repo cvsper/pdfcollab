@@ -855,7 +855,7 @@ def generate_completed_pdf(document):
 SECTION5_WIDGET_POSITIONS = [
     {"field": "account_holder_name_affidavit", "x": 155, "y": 145, "width": 250, "height": 25},
     {"field": "household_member_names_no_income", "x": 45, "y": 265, "width": 450, "height": 80},
-    {"field": "affidavit_signature", "x": 50, "y": 480, "width": 200, "height": 30},
+    {"field": "affidavit_signature", "x": 40, "y": 490, "width": 200, "height": 30},
     {"field": "printed_name_affidavit", "x": 315, "y": 490, "width": 230, "height": 25},
     {"field": "date_affidavit", "x": 50, "y": 535, "width": 150, "height": 25},
     {"field": "telephone_affidavit", "x": 315, "y": 535, "width": 150, "height": 25}
