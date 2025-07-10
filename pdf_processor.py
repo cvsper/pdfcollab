@@ -473,6 +473,15 @@ class PDFProcessor:
             # Step 3: All fields are filled directly in form fields - no overlays needed
             print("📋 All fields filled directly in PDF form fields (no overlay duplicates)")
             
+            # Step 4: Add Section 5 (Zero Income Affidavit) fields with exact positions
+            if 'user2_data' in document and document['user2_data']:
+                print("🧾 Adding Section 5 fields with exact positions...")
+                section5_success = self.add_section5_with_exact_positions(doc, document['user2_data'])
+                if section5_success:
+                    print("✅ Section 5 fields added successfully")
+                else:
+                    print("⚠️  Section 5 fields could not be added")
+            
             # Step 5: Flatten PDF to make content permanent
             print("🔧 Flattening PDF to make content permanent...")
             
@@ -812,3 +821,81 @@ class PDFProcessor:
                 fields.append(field)
         
         return fields
+    
+    def add_section5_with_exact_positions(self, doc, user2_data):
+        """Add Section 5 (Zero Income Affidavit) fields with exact positions"""
+        try:
+            # Section 5 Widget Positions - Same as in app.py
+            SECTION5_WIDGET_POSITIONS = [
+                {"field": "account_holder_name_affidavit", "x": 155, "y": 145, "width": 250, "height": 25},
+                {"field": "household_member_names_no_income", "x": 45, "y": 265, "width": 450, "height": 80},
+                {"field": "affidavit_signature", "x": 40, "y": 490, "width": 200, "height": 30},
+                {"field": "printed_name_affidavit", "x": 315, "y": 490, "width": 230, "height": 25},
+                {"field": "date_affidavit", "x": 50, "y": 535, "width": 150, "height": 25},
+                {"field": "telephone_affidavit", "x": 315, "y": 535, "width": 150, "height": 25}
+            ]
+            
+            # Find the Zero Income Affidavit page (usually page 5)
+            affidavit_page = None
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                text = page.get_text().lower()
+                if "zero income affidavit" in text or "income affidavit" in text:
+                    affidavit_page = page_num
+                    break
+            
+            if affidavit_page is None:
+                # Default to last page
+                affidavit_page = len(doc) - 1
+            
+            page = doc[affidavit_page]
+            print(f"📄 Adding Section 5 fields to page {affidavit_page + 1}")
+            
+            # Map user2_data to Section 5 fields
+            section5_mapping = {
+                "account_holder_name_affidavit": user2_data.get("account_holder_name_affidavit", ""),
+                "household_member_names_no_income": user2_data.get("household_member_names_no_income", ""),
+                "affidavit_signature": user2_data.get("affidavit_signature", ""),
+                "printed_name_affidavit": user2_data.get("printed_name_affidavit", ""),
+                "date_affidavit": user2_data.get("date_affidavit", ""),
+                "telephone_affidavit": user2_data.get("telephone_affidavit", "")
+            }
+            
+            filled_count = 0
+            
+            # Fill each Section 5 field at exact position
+            for pos in SECTION5_WIDGET_POSITIONS:
+                field_name = pos["field"]
+                field_value = section5_mapping.get(field_name, "")
+                
+                if field_value:
+                    x, y, width, height = pos["x"], pos["y"], pos["width"], pos["height"]
+                    
+                    # Determine font size based on field type
+                    if field_name == "household_member_names_no_income":
+                        fontsize = 9  # Smaller for multi-line text
+                    else:
+                        fontsize = 11
+                    
+                    # Insert text directly on the page
+                    rect = fitz.Rect(x, y, x + width, y + height)
+                    page.insert_textbox(
+                        rect,
+                        field_value,
+                        fontsize=fontsize,
+                        fontname="helv",
+                        color=(0, 0, 0),  # Black text
+                        align=0  # Left align
+                    )
+                    
+                    filled_count += 1
+                    print(f"   ✅ Section 5 field positioned: {field_name} = {field_value}")
+            
+            print(f"📄 Section 5: Filled {filled_count} fields using exact positions on page {affidavit_page + 1}")
+            return filled_count > 0
+            
+        except Exception as e:
+            print(f"❌ Error adding Section 5 with exact positions: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
