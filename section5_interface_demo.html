@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Section 5 Interface Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section-header {
+            background: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .field-container {
+            padding: 15px;
+            border: 2px solid #ffc107;
+            background: #fff3cd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .field-label {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 8px;
+        }
+        .field-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .user-assignment {
+            background: #ffc107;
+            color: #000;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            width: 100%;
+            height: 100%;
+            background: #007bff;
+            border-radius: 4px;
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        .nav-button {
+            padding: 10px 20px;
+            border: 1px solid #ced4da;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .nav-button.primary {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .demo-badge {
+            background: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .step-indicator {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="position: relative;">
+        <div class="demo-badge">DEMO</div>
+        
+        <h1>🏠 Home Energy Solutions - PDF Form</h1>
+        
+        <div class="step-indicator">
+            <strong>Section 5 of 5: Zero Income Affidavit</strong>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+        
+        <div class="section-header">
+            <h2>Section 5: Zero Income Affidavit</h2>
+            <p>For household members over 18 with no income (if applicable)</p>
+        </div>
+        
+        <div class="note">
+            <strong>Note:</strong> This section will be completed by User 2. Complete only if you qualify with Option C and have household members over 18 with no income.
+        </div>
+        
+        <!-- Section 5 Fields -->
+        <div class="field-container">
+            <div class="field-label">Account Holder Name (Affidavit)</div>
+            <input type="text" class="field-input" value="Jane Doe (Account Holder)" readonly>
+            <div class="user-assignment">👥 Assigned to User 2</div>
+        </div>
+        
+        <div class="field-container">
+            <div class="field-label">Household Member Names (No Income)</div>
+            <textarea class="field-input" rows="3" readonly>Robert Doe (Son, Age 19, Student)
+Mary Doe (Daughter, Age 20, Unemployed)</textarea>
+            <div class="user-assignment">👥 Assigned to User 2</div>
+        </div>
+        
+        <div class="field-container">
+            <div class="field-label">Affidavit Signature</div>
+            <input type="text" class="field-input" value="Jane M. Doe" readonly>
+            <div class="user-assignment">👥 Assigned to User 2</div>
+        </div>
+        
+        <div class="field-container">
+            <div class="field-label">Printed Name (Affidavit)</div>
+            <input type="text" class="field-input" value="JANE MARIE DOE" readonly>
+            <div class="user-assignment">👥 Assigned to User 2</div>
+        </div>
+        
+        <div class="field-container">
+            <div class="field-label">Date (Affidavit)</div>
+            <input type="date" class="field-input" value="2025-07-10" readonly>
+            <div class="user-assignment">👥 Assigned to User 2</div>
+        </div>
+        
+        <div class="field-container">
+            <div class="field-label">Telephone (Affidavit)</div>
+            <input type="tel" class="field-input" value="555-987-6543" readonly>
+            <div class="user-assignment">👥 Assigned to User 2</div>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-button">← Previous Section</button>
+            <div>
+                <h5>Section 5: Zero Income Affidavit</h5>
+                <p style="margin: 0; color: #6c757d;">For household members over 18 with no income (if applicable)</p>
+            </div>
+            <button class="nav-button primary">Complete Review ✓</button>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 20px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px;">
+            <h3 style="color: #155724; margin-top: 0;">✅ How Section 5 Works:</h3>
+            <ol style="color: #155724;">
+                <li><strong>User 1 Interface:</strong> When processing the PDF, User 1 sees Section 5 fields assigned to User 2 (shown with orange highlighting)</li>
+                <li><strong>User 2 Interface:</strong> User 2 receives the form and completes Section 5 fields (this demo shows filled fields)</li>
+                <li><strong>PDF Download:</strong> The completed PDF includes all Section 5 data properly formatted and positioned</li>
+                <li><strong>Slide Navigation:</strong> Users navigate through sections one at a time using Previous/Next buttons</li>
+            </ol>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #cce7ff; border: 1px solid #99d3ff; border-radius: 8px;">
+            <h4 style="color: #004085; margin-top: 0;">📄 Demo Files Created:</h4>
+            <ul style="color: #004085;">
+                <li><strong>Section5_Demo_Visible.pdf</strong> - Shows exactly how Section 5 appears in the final PDF</li>
+                <li><strong>Section5_Workflow_Demo.pdf</strong> - Shows the complete User 1 → User 2 → Final PDF workflow</li>
+                <li><strong>completed_test_section5_001_Test_Section5_Demo.pdf</strong> - Actual test PDF with Section 5 data embedded</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

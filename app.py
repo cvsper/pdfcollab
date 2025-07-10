@@ -227,6 +227,79 @@ def extract_pdf_fields(pdf_path):
         traceback.print_exc()
         return create_default_fields()
 
+def create_enhanced_pdf_with_section5(input_pdf_path, output_pdf_path):
+    """Create an enhanced PDF with Section 5 form widgets added"""
+    try:
+        print(f"🛠️  Creating enhanced PDF with Section 5 widgets...")
+        
+        # Define Section 5 fields with improved positioning on PAGE 5
+        section5_fields = [
+            {
+                'name': 'Account Holder Name (Affidavit)',
+                'pdf_field_name': 'account_holder_name_affidavit',
+                'type': 'text',
+                'assigned_to': 'user2',
+                'page': 4,  # Page 5 (0-indexed)
+                'position': {'x': 145, 'y': 135, 'width': 250, 'height': 25}  # Final position: right (X=145) and adjusted down (Y=135)
+            },
+            {
+                'name': 'Household Member Names (No Income)', 
+                'pdf_field_name': 'household_member_names_no_income',
+                'type': 'textarea',
+                'assigned_to': 'user2',
+                'page': 4,  # Page 5 (0-indexed)
+                'position': {'x': 35, 'y': 255, 'width': 450, 'height': 80}
+            },
+            {
+                'name': 'Affidavit Signature',
+                'pdf_field_name': 'affidavit_signature', 
+                'type': 'signature',
+                'assigned_to': 'user2',
+                'page': 4,  # Page 5 (0-indexed)
+                'position': {'x': 40, 'y': 480, 'width': 200, 'height': 30}
+            },
+            {
+                'name': 'Printed Name (Affidavit)',
+                'pdf_field_name': 'printed_name_affidavit',
+                'type': 'text',
+                'assigned_to': 'user2',
+                'page': 4,  # Page 5 (0-indexed)
+                'position': {'x': 305, 'y': 480, 'width': 230, 'height': 25}
+            },
+            {
+                'name': 'Date (Affidavit)',
+                'pdf_field_name': 'date_affidavit',
+                'type': 'date',
+                'assigned_to': 'user2',
+                'page': 4,  # Page 5 (0-indexed)
+                'position': {'x': 40, 'y': 525, 'width': 150, 'height': 25}
+            },
+            {
+                'name': 'Telephone (Affidavit)',
+                'pdf_field_name': 'telephone_affidavit',
+                'type': 'tel', 
+                'assigned_to': 'user2',
+                'page': 4,  # Page 5 (0-indexed)
+                'position': {'x': 305, 'y': 525, 'width': 150, 'height': 25}
+            }
+        ]
+        
+        # Use the PDF processor to add widgets
+        success = pdf_processor.add_form_widgets_to_pdf(input_pdf_path, section5_fields, output_pdf_path)
+        
+        if success:
+            print(f"✅ Successfully created enhanced PDF with {len(section5_fields)} Section 5 widgets")
+            return True
+        else:
+            print(f"❌ Failed to create enhanced PDF")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error creating enhanced PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
 def create_default_fields():
     """Create default fields when extraction fails"""
     default_fields = [
@@ -611,15 +684,24 @@ def generate_completed_pdf(document):
         
         print(f"📄 Original PDF found: {document['file_path']}")
         
+        # Check if we need to use enhanced PDF with Section 5 widgets
+        enhanced_pdf_path = document['file_path'].replace('.pdf', '_enhanced.pdf')
+        if os.path.exists(enhanced_pdf_path):
+            print(f"🛠️  Using enhanced PDF with Section 5 widgets: {enhanced_pdf_path}")
+            source_pdf_path = enhanced_pdf_path
+        else:
+            print(f"📄 Using original PDF: {document['file_path']}")
+            source_pdf_path = document['file_path']
+        
         # Create output path
         output_filename = f"completed_{document['id']}_{document['name']}"
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
         print(f"📁 Output path: {output_path}")
         
         # Try PyMuPDF first for better accuracy
-        print("🔧 Attempting to fill original PDF with PyMuPDF...")
-        if pdf_processor.fill_pdf_with_pymupdf(document['file_path'], document, output_path):
-            print(f"✅ Successfully filled original PDF with PyMuPDF: {output_path}")
+        print("🔧 Attempting to fill PDF with PyMuPDF...")
+        if pdf_processor.fill_pdf_with_pymupdf(source_pdf_path, document, output_path):
+            print(f"✅ Successfully filled PDF with PyMuPDF: {output_path}")
             return output_path
         
         # Fallback to advanced filling
@@ -943,119 +1025,118 @@ def start_workflow():
 def user1_interface():
     """User 1 interface - matches your React UserOneInterface component"""
     if request.method == 'POST':
-        if 'pdf_file' not in request.files:
-            flash('No file selected', 'error')
+        # Use local homworks.pdf file instead of uploaded file
+        local_pdf_path = os.path.join(os.getcwd(), 'homworks.pdf')
+        
+        if not os.path.exists(local_pdf_path):
+            flash('Local PDF file (homworks.pdf) not found', 'error')
             return redirect(request.url)
         
-        file = request.files['pdf_file']
-        if file.filename == '':
-            flash('No file selected', 'error')
+        # Create document ID and copy local file to uploads folder
+        document_id = str(uuid.uuid4())
+        filename = 'homworks.pdf'
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{document_id}_{filename}")
+        
+        # Copy local PDF to uploads folder
+        import shutil
+        shutil.copy2(local_pdf_path, file_path)
+        
+        # Get form data from User 1
+        user1_data = {
+            'name': request.form.get('user1_name', ''),
+            'email': request.form.get('user1_email', ''),
+            'employee_id': request.form.get('employee_id', ''),
+            'department': request.form.get('department', ''),
+            'position': request.form.get('position', ''),
+            'start_date': request.form.get('start_date', ''),
+            'salary': request.form.get('salary', ''),
+            'employment_type': request.form.get('employment_type', ''),
+            'address': request.form.get('address', '')
+        }
+        
+        # Extract PDF fields
+        pdf_analysis = extract_pdf_fields(file_path)
+        if "error" in pdf_analysis:
+            flash(f'Error processing PDF: {pdf_analysis["error"]}', 'error')
             return redirect(request.url)
         
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            document_id = str(uuid.uuid4())
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{document_id}_{filename}")
-            file.save(file_path)
-            
-            # Get form data from User 1
-            user1_data = {
-                'name': request.form.get('user1_name', ''),
-                'email': request.form.get('user1_email', ''),
-                'employee_id': request.form.get('employee_id', ''),
-                'department': request.form.get('department', ''),
-                'position': request.form.get('position', ''),
-                'start_date': request.form.get('start_date', ''),
-                'salary': request.form.get('salary', ''),
-                'employment_type': request.form.get('employment_type', ''),
-                'address': request.form.get('address', '')
-            }
-            
-            # Extract PDF fields
-            pdf_analysis = extract_pdf_fields(file_path)
-            if "error" in pdf_analysis:
-                flash(f'Error processing PDF: {pdf_analysis["error"]}', 'error')
-                return redirect(request.url)
-            
-            # Process PDF fields data from User 1
-            pdf_fields_data = request.form.get('pdf_fields')
-            print(f"📋 PDF fields data received: {pdf_fields_data is not None}")
-            
-            if pdf_fields_data:
-                try:
-                    # Parse the PDF fields JSON data from frontend
-                    frontend_fields = json.loads(pdf_fields_data)
-                    print(f"📊 Parsed {len(frontend_fields)} fields from frontend")
-                    
-                    # Debug: Show what we received
-                    for i, field in enumerate(frontend_fields[:3]):  # Show first 3
-                        print(f"   Frontend field {i+1}: {field.get('name', 'unnamed')} = '{field.get('value', '')}' → {field.get('assigned_to', 'unassigned')}")
-                    
-                    # Update the extracted fields with User 1's assignments and values
-                    for frontend_field in frontend_fields:
-                        # Find corresponding field in extracted fields
-                        for extracted_field in pdf_analysis['fields']:
-                            if extracted_field['id'] == frontend_field['id']:
-                                # Update assignment and value
-                                extracted_field['assigned_to'] = frontend_field.get('assigned_to', extracted_field['assigned_to'])
-                                extracted_field['value'] = frontend_field.get('value', '')
-                                if frontend_field.get('value'):
-                                    print(f"✅ User 1 filled '{extracted_field['name']}': '{frontend_field['value']}'")
-                                break
-                        else:
-                            # This is a custom field added by User 1
-                            pdf_analysis['fields'].append(frontend_field)
+        # Process PDF fields data from User 1
+        pdf_fields_data = request.form.get('pdf_fields')
+        print(f"📋 PDF fields data received: {pdf_fields_data is not None}")
+        
+        if pdf_fields_data:
+            try:
+                # Parse the PDF fields JSON data from frontend
+                frontend_fields = json.loads(pdf_fields_data)
+                print(f"📊 Parsed {len(frontend_fields)} fields from frontend")
+                
+                # Debug: Show what we received
+                for i, field in enumerate(frontend_fields[:3]):  # Show first 3
+                    print(f"   Frontend field {i+1}: {field.get('name', 'unnamed')} = '{field.get('value', '')}' → {field.get('assigned_to', 'unassigned')}")
+                
+                # Update the extracted fields with User 1's assignments and values
+                for frontend_field in frontend_fields:
+                    # Find corresponding field in extracted fields
+                    for extracted_field in pdf_analysis['fields']:
+                        if extracted_field['id'] == frontend_field['id']:
+                            # Update assignment and value
+                            extracted_field['assigned_to'] = frontend_field.get('assigned_to', extracted_field['assigned_to'])
+                            extracted_field['value'] = frontend_field.get('value', '')
                             if frontend_field.get('value'):
-                                print(f"✅ User 1 added custom field '{frontend_field['name']}': '{frontend_field['value']}'")
+                                print(f"✅ User 1 filled '{extracted_field['name']}': '{frontend_field['value']}'")
+                            break
+                    else:
+                        # This is a custom field added by User 1
+                        pdf_analysis['fields'].append(frontend_field)
+                        if frontend_field.get('value'):
+                            print(f"✅ User 1 added custom field '{frontend_field['name']}': '{frontend_field['value']}'")
+                
+                print(f"📊 Final field summary:")
+                for field in pdf_analysis['fields']:
+                    if field.get('value'):
+                        print(f"   ✅ {field['name']}: '{field['value']}' → {field['assigned_to']}")
+                    else:
+                        print(f"   ⭕ {field['name']}: (empty) → {field['assigned_to']}")
                     
-                    print(f"📊 Final field summary:")
-                    for field in pdf_analysis['fields']:
-                        if field.get('value'):
-                            print(f"   ✅ {field['name']}: '{field['value']}' → {field['assigned_to']}")
-                        else:
-                            print(f"   ⭕ {field['name']}: (empty) → {field['assigned_to']}")
-                        
-                except json.JSONDecodeError as e:
-                    print(f"❌ Error parsing PDF fields JSON: {e}")
-            else:
-                print("⚠️  No PDF fields data received from User 1")
-            
-            # Add to mock data
-            new_document = {
-                'id': document_id,
-                'name': filename,
-                'status': 'Awaiting User 2',
-                'lastUpdated': 'Just now',
-                'created_at': datetime.now().isoformat(),
-                'user1_data': user1_data,
-                'file_path': file_path,
-                'pdf_fields': pdf_analysis['fields'],
-                'field_assignments': {field['id']: field['assigned_to'] for field in pdf_analysis['fields']}
-            }
-            
-            print(f"📄 Adding new document to MOCK_DOCUMENTS:")
-            print(f"   📋 Document ID: {document_id}")
-            print(f"   📋 Document name: {filename}")
-            print(f"   📋 PDF fields count: {len(pdf_analysis['fields'])}")
-            
-            # Show field values being saved
-            fields_with_values = [f for f in pdf_analysis['fields'] if f.get('value')]
-            fields_without_values = [f for f in pdf_analysis['fields'] if not f.get('value')]
-            
-            print(f"   ✅ Fields with values: {len(fields_with_values)}")
-            for field in fields_with_values:
-                print(f"      - {field['name']}: '{field['value']}' → {field['assigned_to']}")
-            
-            print(f"   ⭕ Fields without values: {len(fields_without_values)}")
-            for field in fields_without_values:
-                print(f"      - {field['name']}: (empty) → {field['assigned_to']}")
-            
-            MOCK_DOCUMENTS.append(new_document)
-            
-            flash('Document uploaded and sent to User 2!', 'success')
-            return redirect(url_for('dashboard'))
+            except json.JSONDecodeError as e:
+                print(f"❌ Error parsing PDF fields JSON: {e}")
         else:
-            flash('Invalid file type. Please upload a PDF file.', 'error')
+            print("⚠️  No PDF fields data received from User 1")
+        
+        # Add to mock data
+        new_document = {
+            'id': document_id,
+            'name': filename,
+            'status': 'Awaiting User 2',
+            'lastUpdated': 'Just now',
+            'created_at': datetime.now().isoformat(),
+            'user1_data': user1_data,
+            'file_path': file_path,
+            'pdf_fields': pdf_analysis['fields'],
+            'field_assignments': {field['id']: field['assigned_to'] for field in pdf_analysis['fields']}
+        }
+        
+        print(f"📄 Adding new document to MOCK_DOCUMENTS:")
+        print(f"   📋 Document ID: {document_id}")
+        print(f"   📋 Document name: {filename}")
+        print(f"   📋 PDF fields count: {len(pdf_analysis['fields'])}")
+        
+        # Show field values being saved
+        fields_with_values = [f for f in pdf_analysis['fields'] if f.get('value')]
+        fields_without_values = [f for f in pdf_analysis['fields'] if not f.get('value')]
+        
+        print(f"   ✅ Fields with values: {len(fields_with_values)}")
+        for field in fields_with_values:
+            print(f"      - {field['name']}: '{field['value']}' → {field['assigned_to']}")
+        
+        print(f"   ⭕ Fields without values: {len(fields_without_values)}")
+        for field in fields_without_values:
+            print(f"      - {field['name']}: (empty) → {field['assigned_to']}")
+        
+        MOCK_DOCUMENTS.append(new_document)
+        
+        flash('Document processed and sent to User 2!', 'success')
+        return redirect(url_for('dashboard'))
     
     return render_template('user1_enhanced.html')
 
@@ -1312,6 +1393,43 @@ def update_field_value(document_id):
     
     return jsonify({'success': True, 'field_id': field_id, 'value': value})
 
+@app.route('/api/extract-fields-local', methods=['POST'])
+def extract_fields_local_api():
+    """API endpoint to extract fields from local homworks.pdf file"""
+    try:
+        # Use local PDF file
+        local_pdf_path = os.path.join(os.getcwd(), 'homworks.pdf')
+        
+        if not os.path.exists(local_pdf_path):
+            return jsonify({'error': 'Local PDF file (homworks.pdf) not found'}), 404
+        
+        # Create enhanced PDF with Section 5 widgets first
+        enhanced_pdf_path = local_pdf_path.replace('.pdf', '_enhanced.pdf')
+        if create_enhanced_pdf_with_section5(local_pdf_path, enhanced_pdf_path):
+            print(f"✅ Created enhanced PDF with Section 5 widgets: {enhanced_pdf_path}")
+            # Use the enhanced PDF for field extraction
+            extraction_path = enhanced_pdf_path
+        else:
+            print(f"⚠️  Using original PDF for extraction")
+            extraction_path = local_pdf_path
+        
+        # Extract PDF fields from the enhanced version
+        pdf_analysis = extract_pdf_fields(extraction_path)
+        
+        if "error" in pdf_analysis:
+            return jsonify({'error': pdf_analysis['error']}), 500
+        
+        return jsonify({
+            'fields': pdf_analysis['fields'],
+            'message': f'Successfully extracted {len(pdf_analysis["fields"])} fields from local PDF'
+        })
+        
+    except Exception as e:
+        print(f"Error in extract_fields_local_api: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to process local PDF: {str(e)}'}), 500
+
 @app.route('/api/extract-fields', methods=['POST'])
 def extract_fields_api():
     """API endpoint to extract fields from uploaded PDF"""
@@ -1360,6 +1478,36 @@ def extract_fields_api():
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Failed to process PDF: {str(e)}'}), 500
+
+@app.route('/api/pdf-preview-local')
+def get_pdf_preview_local():
+    """API endpoint to get PDF preview image for local file"""
+    try:
+        # Use local PDF file
+        local_pdf_path = os.path.join(os.getcwd(), 'homworks.pdf')
+        
+        if not os.path.exists(local_pdf_path):
+            return jsonify({'error': 'Local PDF file (homworks.pdf) not found'}), 404
+        
+        # Convert PDF to image
+        image_url = convert_pdf_to_image(local_pdf_path)
+        
+        # Get PDF info
+        pdf_info = pdf_processor.get_pdf_info(local_pdf_path)
+        
+        return jsonify({
+            'preview_url': image_url,
+            'page_count': pdf_info.get('page_count', 1),
+            'pdf_info': pdf_info,
+            'filename': 'homworks.pdf',
+            'file_path': local_pdf_path
+        })
+        
+    except Exception as e:
+        print(f"Error in get_pdf_preview_local: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to generate local PDF preview: {str(e)}'}), 500
 
 @app.route('/api/pdf-preview/<document_id>')
 def get_pdf_preview(document_id):

@@ -14,54 +14,38 @@
         </a>
     </div>
 
-    <form method="POST" enctype="multipart/form-data" id="user1Form">
-        <!-- File Upload Section -->
+    <form method="POST" id="user1Form">
+        <!-- PDF Document Info Section -->
         <div class="bg-white shadow sm:rounded-lg overflow-hidden">
             <div class="px-4 py-5 sm:p-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Upload PDF Document</h3>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">PDF Document: homworks.pdf</h3>
                 <div class="mt-2 max-w-xl text-sm text-gray-500">
-                    <p>Upload your PDF document. We'll extract the form fields automatically and let you assign which fields User 2 should complete.</p>
+                    <p>Using the local PDF document. We'll extract the form fields automatically and let you assign which fields User 2 should complete.</p>
                 </div>
                 <div class="mt-5">
-                    <div id="file-drop-area" 
-                         class="flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6 hover:border-blue-400 transition-colors cursor-pointer"
-                         onclick="console.log('Drop area clicked'); document.getElementById('pdf_file').click()">
-                        <div class="space-y-1 text-center">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <div class="flex items-center">
+                            <svg class="h-8 w-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
                             </svg>
-                            <div class="flex text-sm text-gray-600">
-                                <span class="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 hover:text-blue-500">Upload a PDF</span>
-                                <p class="pl-1">or drag and drop</p>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">homworks.pdf</p>
+                                <p class="text-sm text-gray-500">Local PDF file ready for processing</p>
                             </div>
-                            <p class="text-xs text-gray-500">PDF up to 10MB</p>
                         </div>
-                        <input id="pdf_file" name="pdf_file" type="file" accept=".pdf" class="sr-only" required onchange="handleFileSelect(this)">
-                    </div>
-                    <div id="file-preview" class="mt-4 hidden">
-                        <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
-                            <div class="flex items-center">
-                                <svg class="h-8 w-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
-                                </svg>
-                                <div class="ml-3">
-                                    <p class="text-sm font-medium text-gray-900" id="file-name"></p>
-                                    <p class="text-sm text-gray-500" id="file-size"></p>
-                                </div>
-                            </div>
-                            <button type="button" onclick="clearFile()" class="text-gray-400 hover:text-gray-600">
-                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                                </svg>
-                            </button>
-                        </div>
+                        <button type="button" onclick="processLocalPDF()" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                            </svg>
+                            Process PDF
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- PDF Field Editor - Shows after upload -->
-        <div id="pdf-editor" class="bg-white shadow sm:rounded-lg overflow-hidden hidden">
+        <!-- PDF Field Editor - Shows after processing -->
+        <div id="pdf-editor" class="bg-white shadow sm:rounded-lg overflow-hidden">
             <div class="px-4 py-5 sm:p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg leading-6 font-medium text-gray-900">Edit PDF Fields & Assign to Users</h3>
@@ -77,82 +61,79 @@
                     </div>
                 </div>
 
-                <!-- PDF Preview and Field List -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- PDF Preview -->
-                    <div class="space-y-4">
-                        <h4 class="font-medium text-gray-900">PDF Preview</h4>
-                        <div class="border-2 border-gray-200 rounded-lg bg-gray-50 p-4 min-h-[500px] flex items-center justify-center">
-                            <div id="pdf-preview-container" class="text-center">
-                                <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
-                                </svg>
-                                <p class="text-gray-500">PDF preview will appear here</p>
-                            </div>
+                <!-- Field List and Assignment -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-medium text-gray-900">PDF Form Sections</h4>
+                        <div class="text-sm text-gray-500">
+                            <span id="fields-count"></span>
                         </div>
                     </div>
-
-                    <!-- Field List and Assignment -->
-                    <div class="space-y-4">
-                        <h4 class="font-medium text-gray-900">Detected PDF Fields</h4>
-                        <div id="loading-fields" class="text-center py-8">
-                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                            <p class="mt-2 text-gray-500">Analyzing PDF fields...</p>
+                    
+                    <!-- Progress Indicator -->
+                    <div id="section-progress" class="hidden mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Progress</span>
+                            <span class="text-sm text-gray-500">
+                                <span id="current-section">1</span> of <span id="total-sections">5</span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 20%"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-xs text-gray-500">
+                            <span>Property Info</span>
+                            <span>Applicant Info</span>
+                            <span>Qualification</span>
+                            <span>Authorization</span>
+                            <span>Affidavit</span>
+                        </div>
+                    </div>
+                    
+                    <div id="loading-fields" class="text-center py-8">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <p class="mt-2 text-gray-500">Analyzing PDF fields...</p>
+                    </div>
+                    
+                    <!-- Slide Container -->
+                    <div id="pdf-fields-list" class="hidden">
+                        <div id="section-slides" class="relative overflow-hidden">
+                            <!-- Sections will be populated here as slides -->
                         </div>
                         
-                        <div id="pdf-fields-list" class="space-y-3 hidden">
-                            <!-- Fields will be populated here via JavaScript -->
-                        </div>
-                        
-                        <!-- Manual Field Addition -->
-                        <div id="manual-field-section" class="mt-6 p-4 border-2 border-dashed border-gray-300 rounded-lg hidden">
-                            <h5 class="font-medium text-gray-900 mb-3">Add Custom Field</h5>
-                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                <input type="text" id="custom-field-name" placeholder="Field name (e.g., 'Employee ID')"
-                                       class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <select id="custom-field-type" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="text">Text</option>
-                                    <option value="email">Email</option>
-                                    <option value="tel">Phone</option>
-                                    <option value="date">Date</option>
-                                    <option value="textarea">Textarea</option>
-                                    <option value="checkbox">Checkbox</option>
-                                    <option value="radio">Radio (Yes/No)</option>
-                                    <option value="signature">Signature</option>
-                                </select>
-                                <select id="custom-field-user" class="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="user1">My Field</option>
-                                    <option value="user2">User 2 Field</option>
-                                </select>
-                            </div>
-                            <div class="mt-3 flex justify-between">
-                                <button type="button" onclick="cancelCustomField()" 
-                                        class="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
-                                <button type="button" onclick="addCustomField()" 
-                                        class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                                    Add Field
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Add Field Button -->
-                        <div class="mt-4 text-center">
-                            <button type="button" onclick="showCustomFieldForm()" 
-                                    class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        <!-- Navigation Controls -->
+                        <div id="slide-navigation" class="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+                            <button id="prev-section" 
+                                    class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onclick="previousSection()" disabled>
+                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                 </svg>
-                                Add Custom Field
+                                Previous Section
+                            </button>
+                            
+                            <div class="text-center">
+                                <h5 id="current-section-title" class="text-lg font-medium text-gray-900"></h5>
+                                <p id="current-section-description" class="text-sm text-gray-500"></p>
+                            </div>
+                            
+                            <button id="next-section" 
+                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                                    onclick="nextSection()">
+                                Next Section
+                                <svg class="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                </svg>
                             </button>
                         </div>
-                        
-                        <div id="no-fields" class="text-center py-8 hidden">
-                            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                            </svg>
-                            <p class="text-gray-500">No editable fields detected in this PDF</p>
-                            <p class="text-sm text-gray-400 mt-1">You can still proceed with the workflow</p>
-                        </div>
+                    </div>
+                    
+                    <div id="no-fields" class="text-center py-8 hidden">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <p class="text-gray-500">No editable fields detected in this PDF</p>
+                        <p class="text-sm text-gray-400 mt-1">You can still proceed with the workflow</p>
                     </div>
                 </div>
 
@@ -209,65 +190,31 @@ function testAPI() {
     });
 }
 
-// File upload handling
-function handleFileSelect(input) {
-    console.log('🔍 handleFileSelect called with input:', input);
-    console.log('🔍 Input files:', input.files);
-    console.log('🔍 Input files length:', input.files.length);
+// Local PDF processing
+function processLocalPDF() {
+    console.log('🔍 Processing local PDF file...');
     
-    const file = input.files[0];
-    if (file) {
-        console.log('📁 File selected:', file.name, file.size, 'bytes');
-        
-        // Show file preview
-        document.getElementById('file-name').textContent = file.name;
-        document.getElementById('file-size').textContent = formatFileSize(file.size);
-        document.getElementById('file-preview').classList.remove('hidden');
-        
-        // Show PDF editor section
-        document.getElementById('pdf-editor').classList.remove('hidden');
-        
-        // Start PDF processing immediately
-        console.log('⏳ Starting PDF processing in 1 second...');
-        setTimeout(() => {
-            loadPDFFields();
-        }, 1000);
-        
-        // Scroll to editor
-        document.getElementById('pdf-editor').scrollIntoView({ behavior: 'smooth' });
-    } else {
-        console.warn('⚠️ No file selected');
-    }
+    // Show PDF editor section
+    document.getElementById('pdf-editor').classList.remove('hidden');
+    
+    // Start PDF processing immediately
+    console.log('⏳ Starting PDF processing...');
+    loadPDFFields();
+    
+    // Scroll to editor
+    document.getElementById('pdf-editor').scrollIntoView({ behavior: 'smooth' });
 }
 
 function loadPDFFields() {
-    console.log('🔄 Starting PDF field extraction...');
+    console.log('🔄 Starting PDF field extraction for local file...');
     
-    const fileInput = document.getElementById('pdf_file');
-    if (!fileInput.files[0]) {
-        console.error('❌ No PDF file selected');
-        showErrorMessage('No PDF file selected');
-        return;
-    }
-    
-    const file = fileInput.files[0];
-    console.log(`📄 Processing file: ${file.name} (${file.size} bytes)`);
-    
-    const formData = new FormData();
-    formData.append('pdf_file', file);
-    
-    // Create separate FormData objects for each request
-    const formDataFields = new FormData();
-    formDataFields.append('pdf_file', fileInput.files[0]);
-    
-    const formDataPreview = new FormData();
-    formDataPreview.append('pdf_file', fileInput.files[0]);
+    // Show PDF editor section
+    document.getElementById('pdf-editor').classList.remove('hidden');
     
     // Extract PDF fields first, then preview
-    console.log('🚀 Calling /api/extract-fields...');
-    fetch('/api/extract-fields', {
-        method: 'POST',
-        body: formDataFields
+    console.log('🚀 Calling /api/extract-fields-local...');
+    fetch('/api/extract-fields-local', {
+        method: 'POST'
     })
     .then(response => {
         console.log('📡 Extract fields response status:', response.status);
@@ -276,41 +223,8 @@ function loadPDFFields() {
     .then(fieldsData => {
         console.log('✅ Fields API response:', fieldsData);
         
-        // Now get preview
-        console.log('🚀 Calling /api/pdf-preview-upload...');
-        return fetch('/api/pdf-preview-upload', {
-            method: 'POST',
-            body: formDataPreview
-        })
-        .then(response => {
-            console.log('📡 Preview response status:', response.status);
-            return response.json();
-        })
-        .then(previewData => {
-            console.log('✅ Preview API response:', previewData);
-            return [fieldsData, previewData];
-        });
-    })
-    .then(([fieldsData, previewData]) => {
-        console.log('✅ Received API responses:');
-        console.log('   Fields data:', fieldsData);
-        console.log('   Preview data:', previewData);
-        
         // Hide loading
         document.getElementById('loading-fields').classList.add('hidden');
-        
-        // Handle PDF preview
-        if (previewData.preview_url && !previewData.error) {
-            console.log('✅ Loading PDF preview...');
-            loadPDFPreview(
-                previewData.preview_url, 
-                previewData.pdf_info, 
-                previewData.current_page || 1,
-                previewData.file_path
-            );
-        } else {
-            console.warn('❌ PDF preview failed:', previewData.error);
-        }
         
         // Handle PDF fields
         if (fieldsData.error) {
@@ -326,6 +240,10 @@ function loadPDFFields() {
             pdfFields.forEach((field, index) => {
                 console.log(`   ${index + 1}. ${field.name} (${field.id}) → ${field.assigned_to} [${field.value || 'empty'}]`);
             });
+            
+            // Update field count display
+            document.getElementById('fields-count').textContent = `${fieldsData.fields.length} fields organized in 5 sections`;
+            
             document.getElementById('pdf-fields-list').classList.remove('hidden');
             renderPDFFields();
             showNotification(`Successfully detected ${fieldsData.fields.length} fields from your PDF!`, 'success');
@@ -344,211 +262,152 @@ function loadPDFFields() {
     });
 }
 
-// Global variables for page navigation
-let currentPdfInfo = null;
-let currentFilePath = null;
-let currentPage = 1;
-
-function loadPDFPreview(previewUrl, pdfInfo, currentPageNum = 1, filePath = null) {
-    const container = document.getElementById('pdf-preview-container');
-    
-    // Store PDF info globally for navigation
-    currentPdfInfo = pdfInfo;
-    currentFilePath = filePath;
-    currentPage = currentPageNum;
-    
-    if (previewUrl) {
-        const pageCount = pdfInfo?.page_count || 1;
-        const hasMultiplePages = pageCount > 1;
-        
-        container.innerHTML = `
-            <div class="w-full max-w-full">
-                ${hasMultiplePages ? `
-                    <!-- Page Navigation Controls -->
-                    <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg border">
-                        <button id="prev-page" 
-                                onclick="navigateToPage(${currentPage - 1})"
-                                class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                ${currentPage <= 1 ? 'disabled' : ''}>
-                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            Previous
-                        </button>
-                        
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-gray-600">Page</span>
-                            <input type="number" 
-                                   id="page-input"
-                                   value="${currentPage}" 
-                                   min="1" 
-                                   max="${pageCount}"
-                                   class="w-16 px-2 py-1 text-sm text-center border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                                   onchange="navigateToPage(parseInt(this.value))"
-                                   onkeypress="if(event.key==='Enter') navigateToPage(parseInt(this.value))">
-                            <span class="text-sm text-gray-600">of ${pageCount}</span>
-                        </div>
-                        
-                        <button id="next-page" 
-                                onclick="navigateToPage(${currentPage + 1})"
-                                class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                ${currentPage >= pageCount ? 'disabled' : ''}>
-                            Next
-                            <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                        </button>
-                    </div>
-                ` : ''}
-                
-                <!-- PDF Image -->
-                <div class="relative">
-                    <img src="${previewUrl}" 
-                         alt="PDF Preview - Page ${currentPage}"
-                         class="w-full h-auto rounded-lg shadow-sm border border-gray-200"
-                         style="max-height: 600px; object-fit: contain;">
-                    ${hasMultiplePages ? `
-                        <div class="absolute top-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
-                            ${currentPage} / ${pageCount}
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <!-- PDF Info -->
-                <div class="mt-2 text-sm text-gray-500 text-center">
-                    Page ${currentPage} of ${pageCount} • ${pdfInfo?.form_field_count || 0} form fields detected
-                    ${hasMultiplePages ? '<br><span class="text-xs">Use navigation controls above to browse pages</span>' : ''}
-                </div>
-            </div>
-        `;
-        console.log(`✅ PDF preview loaded successfully - Page ${currentPage} of ${pageCount}`);
-    } else {
-        container.innerHTML = `
-            <div class="text-center">
-                <svg class="mx-auto h-16 w-16 text-red-400 mb-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                </svg>
-                <p class="text-gray-500">Failed to load PDF preview</p>
-            </div>
-        `;
-    }
-}
-
-function navigateToPage(pageNum) {
-    if (!currentPdfInfo || !currentFilePath) {
-        console.error('❌ No PDF loaded for navigation');
-        return;
-    }
-    
-    const pageCount = currentPdfInfo.page_count || 1;
-    
-    // Validate page number
-    if (pageNum < 1 || pageNum > pageCount) {
-        console.warn(`⚠️ Invalid page number: ${pageNum}. Valid range: 1-${pageCount}`);
-        return;
-    }
-    
-    if (pageNum === currentPage) {
-        console.log(`ℹ️ Already on page ${pageNum}`);
-        return;
-    }
-    
-    console.log(`🔄 Navigating to page ${pageNum}...`);
-    
-    // Show loading state
-    const container = document.getElementById('pdf-preview-container');
-    const img = container.querySelector('img');
-    if (img) {
-        img.style.opacity = '0.5';
-    }
-    
-    // Call API to get specific page
-    fetch(`/api/pdf-page/${encodeURIComponent(currentFilePath)}/${pageNum}`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.preview_url && !data.error) {
-            console.log(`✅ Loaded page ${pageNum}`);
-            loadPDFPreview(
-                data.preview_url,
-                data.pdf_info,
-                data.current_page,
-                currentFilePath
-            );
-        } else {
-            throw new Error(data.error || 'Failed to load page');
-        }
-    })
-    .catch(error => {
-        console.error(`❌ Error loading page ${pageNum}:`, error);
-        showErrorMessage(`Failed to load page ${pageNum}: ${error.message}`);
-        
-        // Restore image opacity
-        if (img) {
-            img.style.opacity = '1';
-        }
-    });
-}
-
-// Keyboard navigation support
-document.addEventListener('keydown', function(event) {
-    // Only handle keyboard navigation when PDF preview is visible and focused
-    const previewContainer = document.getElementById('pdf-preview-container');
-    if (!previewContainer || !currentPdfInfo || currentPdfInfo.page_count <= 1) {
-        return;
-    }
-    
-    // Check if user is typing in an input field
-    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
-        return;
-    }
-    
-    switch(event.key) {
-        case 'ArrowLeft':
-        case 'ArrowUp':
-            if (currentPage > 1) {
-                event.preventDefault();
-                navigateToPage(currentPage - 1);
-            }
-            break;
-        case 'ArrowRight':
-        case 'ArrowDown':
-            if (currentPage < currentPdfInfo.page_count) {
-                event.preventDefault();
-                navigateToPage(currentPage + 1);
-            }
-            break;
-        case 'Home':
-            if (currentPage > 1) {
-                event.preventDefault();
-                navigateToPage(1);
-            }
-            break;
-        case 'End':
-            if (currentPage < currentPdfInfo.page_count) {
-                event.preventDefault();
-                navigateToPage(currentPdfInfo.page_count);
-            }
-            break;
-    }
-});
+// PDF preview functionality removed - focusing on field organization
 
 function showErrorMessage(message) {
     showNotification(message, 'error');
 }
 
+// Global variables for slide navigation
+let currentSectionIndex = 0;
+let formSections = [];
+
 function renderPDFFields() {
-    const container = document.getElementById('pdf-fields-list');
-    container.innerHTML = '';
+    // Define field sections based on actual PDF structure
+    formSections = [
+        {
+            title: "Section 1: Property Information (1-4 Units)",
+            description: "Property details and basic information",
+            fieldNames: [
+                "Property Address", "Apartment Number", "Num Of Apt1"
+            ]
+        },
+        {
+            title: "Section 2: Applicant and Energy Information", 
+            description: "Personal details, heating fuel type, and utility information",
+            fieldNames: [
+                "First Name", "Last Name", "City", "State", "ZIP Code", "Phone Number", "Email Address",
+                "Electric Heat (Radio Button)", "Gas Heat (Radio Button)", "Oil Heat (Radio Button)", 
+                "Propane Heat (Radio Button)", "Property Owner (Radio Button)", "Renter (Radio Button)",
+                "Single Family Home (Checkbox)", "Apartment (Checkbox)", "Condominium (Checkbox)",
+                "Electric Eversource2 (Radio Button)", "Electric Ui2 (Radio Button)", 
+                "Gas Util Cng2 (Radio Button)", "Gas Util Eversource2 (Radio Button)", "Gas Util Scg2 (Radio Button)",
+                "Elect Acct Applicant2 (Radio Button)", "Elect Acct Other2 (Radio Button)", 
+                "Gas Acct Applicant2 (Radio Button)", "Gas Acct Other2 (Radio Button)", "Elect Acct Other Acct2 (Radio Button)",
+                "Radio Group 13Hbmf", "Elect Acct Other Name2", "Gas Acct Other Name2", "Elec Acct Num2", "Gas Acct Num2"
+            ]
+        },
+        {
+            title: "Section 3: Applicant Qualification Information",
+            description: "Income eligibility and qualification options", 
+            fieldNames: [
+                "People In Household4", "People In Household Overage4", "Annual Income4",
+                "Elec Discount4 (Checkbox)", "Low Income Program (Checkbox)",
+                "Matching Payment Eversource4 (Checkbox)", "Bill Forgiveness Program (Checkbox)", 
+                "Matching Pay United4 (Checkbox)",
+                "EBT (Food Stamps) (Checkbox)", "Energy Award Letter4 (Checkbox)", 
+                "Section Eight4 (Checkbox)", "Multifam4 (Checkbox)"
+            ]
+        },
+        {
+            title: "Section 4: Authorization",
+            description: "Applicant and property owner signatures",
+            fieldNames: [
+                "Applicant Signature", "Date", "Landlord Name3", "Address3", 
+                "City", "Text 55Cits", "Text 56Qpfj", "Property Owner Signature", 
+                "Phone Number", "Date", "Email Address"
+            ]
+        },
+        {
+            title: "Section 5: Zero Income Affidavit",
+            description: "For household members over 18 with no income (if applicable)",
+            fieldNames: [
+                // Note: These fields may need to be added manually if not detected in the PDF
+                "Account Holder Name (Affidavit)",
+                "Household Member Names (No Income)",
+                "Affidavit Signature", 
+                "Printed Name (Affidavit)",
+                "Date (Affidavit)",
+                "Telephone (Affidavit)"
+            ]
+        }
+    ];
     
-    pdfFields.forEach(field => {
-        const fieldElement = createFieldElement(field);
-        container.appendChild(fieldElement);
+    // Build sections with fields
+    formSections.forEach((section, sectionIndex) => {
+        // Filter and add fields for this section
+        const sectionFields = pdfFields.filter(field => 
+            section.fieldNames.includes(field.name)
+        );
+        
+        // Special handling for Section 5 - create manual fields if not detected
+        if (sectionIndex === 4 && sectionFields.length === 0) {
+            // Create manual fields for Zero Income Affidavit - assigned to User 2
+            const affidavitFields = [
+                { name: "Account Holder Name (Affidavit)", type: "text", assigned_to: "user2" },
+                { name: "Household Member Names (No Income)", type: "textarea", assigned_to: "user2" },
+                { name: "Affidavit Signature", type: "signature", assigned_to: "user2" },
+                { name: "Printed Name (Affidavit)", type: "text", assigned_to: "user2" },
+                { name: "Date (Affidavit)", type: "date", assigned_to: "user2" },
+                { name: "Telephone (Affidavit)", type: "tel", assigned_to: "user2" }
+            ];
+            
+            // Define improved positions for Section 5 fields
+            const improvedPositions = [
+                {x: 145, y: 135, width: 250, height: 25},   // Account Holder Name - final position
+                {x: 35, y: 255, width: 450, height: 80},   // Household Members - final position (larger)
+                {x: 40, y: 480, width: 200, height: 30},   // Signature - final position
+                {x: 305, y: 480, width: 230, height: 25},  // Printed Name - final position
+                {x: 40, y: 525, width: 150, height: 25},   // Date - final position
+                {x: 305, y: 525, width: 150, height: 25}   // Telephone - final position
+            ];
+            
+            affidavitFields.forEach((fieldData, index) => {
+                const position = improvedPositions[index] || {x: 80, y: 400 + index * 40, width: 200, height: 25};
+                
+                const field = {
+                    id: `affidavit_field_${index}`,
+                    name: fieldData.name,
+                    pdf_field_name: fieldData.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
+                    type: fieldData.type,
+                    value: '',
+                    assigned_to: fieldData.assigned_to,
+                    source: 'manual_affidavit',
+                    page: 4,  // Page 5 (0-indexed) - Section 5 belongs on page 5
+                    position: position
+                };
+                pdfFields.push(field); // Add to global fields array
+                sectionFields.push(field);
+            });
+        }
+        
+        // Store fields in section object
+        section.fields = sectionFields;
     });
+    
+    // Add any remaining fields that don't fit into the defined sections
+    const categorizedFieldNames = formSections.flatMap(s => s.fieldNames);
+    const uncategorizedFields = pdfFields.filter(field => 
+        !categorizedFieldNames.includes(field.name)
+    );
+    
+    if (uncategorizedFields.length > 0) {
+        formSections.push({
+            title: "Other Fields",
+            description: "Additional fields detected in the PDF",
+            fieldNames: uncategorizedFields.map(f => f.name),
+            fields: uncategorizedFields
+        });
+    }
+    
+    // Show progress indicator and initialize slides
+    document.getElementById('section-progress').classList.remove('hidden');
+    document.getElementById('total-sections').textContent = formSections.length;
+    
+    // Initialize with first section
+    currentSectionIndex = 0;
+    renderCurrentSection();
+    updateNavigationState();
 }
 
 function createFieldElement(field) {
@@ -616,12 +475,123 @@ function createFieldElement(field) {
     return div;
 }
 
+function renderCurrentSection() {
+    const container = document.getElementById('section-slides');
+    container.innerHTML = '';
+    
+    if (formSections.length === 0) return;
+    
+    const currentSection = formSections[currentSectionIndex];
+    
+    // Create section slide
+    const sectionDiv = document.createElement('div');
+    sectionDiv.className = 'mb-6 border border-gray-200 rounded-lg overflow-hidden';
+    
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'bg-gray-50 px-4 py-3 border-b border-gray-200';
+    headerDiv.innerHTML = `
+        <h4 class="text-md font-semibold text-gray-900">${currentSection.title}</h4>
+        <p class="text-sm text-gray-600">${currentSection.description}</p>
+    `;
+    sectionDiv.appendChild(headerDiv);
+    
+    const fieldsContainer = document.createElement('div');
+    fieldsContainer.className = 'p-4 space-y-3';
+    
+    // Special handling for Section 5 note
+    if (currentSectionIndex === 4) {
+        const noteDiv = document.createElement('div');
+        noteDiv.className = 'mb-4 p-3 bg-orange-50 border border-orange-200 rounded-md';
+        noteDiv.innerHTML = `
+            <p class="text-sm text-orange-800">
+                <strong>Note:</strong> This section will be completed by User 2. Complete only if you qualify with Option C and have household members over 18 with no income.
+            </p>
+        `;
+        fieldsContainer.appendChild(noteDiv);
+    }
+    
+    // Render fields for current section
+    if (currentSection.fields && currentSection.fields.length > 0) {
+        currentSection.fields.forEach(field => {
+            const fieldElement = createFieldElement(field);
+            fieldsContainer.appendChild(fieldElement);
+        });
+    } else {
+        const noFieldsDiv = document.createElement('div');
+        noFieldsDiv.className = 'text-center py-4 text-gray-500';
+        noFieldsDiv.textContent = 'No fields detected for this section';
+        fieldsContainer.appendChild(noFieldsDiv);
+    }
+    
+    sectionDiv.appendChild(fieldsContainer);
+    container.appendChild(sectionDiv);
+    
+    // Update section title and description in navigation
+    document.getElementById('current-section-title').textContent = currentSection.title;
+    document.getElementById('current-section-description').textContent = currentSection.description;
+}
+
+function previousSection() {
+    if (currentSectionIndex > 0) {
+        currentSectionIndex--;
+        renderCurrentSection();
+        updateNavigationState();
+        updateProgress();
+    }
+}
+
+function nextSection() {
+    if (currentSectionIndex < formSections.length - 1) {
+        currentSectionIndex++;
+        renderCurrentSection();
+        updateNavigationState();
+        updateProgress();
+    }
+}
+
+function updateNavigationState() {
+    const prevButton = document.getElementById('prev-section');
+    const nextButton = document.getElementById('next-section');
+    
+    // Update Previous button
+    prevButton.disabled = currentSectionIndex === 0;
+    
+    // Update Next button
+    if (currentSectionIndex === formSections.length - 1) {
+        nextButton.innerHTML = `
+            Complete Review
+            <svg class="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+        `;
+        nextButton.onclick = () => {
+            // Scroll to form submission section
+            document.querySelector('.mt-8.border-t.pt-6').scrollIntoView({ behavior: 'smooth' });
+            showNotification('All sections completed! Please review and submit.', 'success');
+        };
+    } else {
+        nextButton.innerHTML = `
+            Next Section
+            <svg class="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+        `;
+        nextButton.onclick = nextSection;
+    }
+}
+
+function updateProgress() {
+    const progressPercentage = ((currentSectionIndex + 1) / formSections.length) * 100;
+    document.getElementById('progress-bar').style.width = `${progressPercentage}%`;
+    document.getElementById('current-section').textContent = currentSectionIndex + 1;
+}
+
 function reassignField(fieldId, newAssignment) {
     // Update field assignment
     const field = pdfFields.find(f => f.id === fieldId);
     if (field) {
         field.assigned_to = newAssignment;
-        renderPDFFields();
+        renderCurrentSection(); // Re-render current section instead of all sections
         
         // Show feedback
         showNotification(`Field "${field.name}" assigned to ${newAssignment === 'user1' ? 'you' : 'User 2'}`, 'success');
@@ -640,56 +610,6 @@ function updateFieldValue(fieldId, value) {
     }
 }
 
-function showCustomFieldForm() {
-    document.getElementById('manual-field-section').classList.remove('hidden');
-}
-
-function cancelCustomField() {
-    document.getElementById('manual-field-section').classList.add('hidden');
-    document.getElementById('custom-field-name').value = '';
-    document.getElementById('custom-field-type').value = 'text';
-    document.getElementById('custom-field-user').value = 'user1';
-}
-
-function addCustomField() {
-    const name = document.getElementById('custom-field-name').value.trim();
-    const type = document.getElementById('custom-field-type').value;
-    const assignedTo = document.getElementById('custom-field-user').value;
-    
-    if (!name) {
-        alert('Please enter a field name');
-        return;
-    }
-    
-    // Create new field
-    const newField = {
-        id: `custom_${Date.now()}`,
-        name: name,
-        type: type,
-        value: '',
-        assigned_to: assignedTo,
-        page: 0,
-        source: 'manual',
-        position: {
-            x: 100 + (pdfFields.length % 2) * 250,
-            y: 700 - Math.floor(pdfFields.length / 2) * 60,
-            width: 200,
-            height: type === 'textarea' ? 60 : 30
-        }
-    };
-    
-    // Add to fields array
-    pdfFields.push(newField);
-    
-    // Re-render fields
-    renderPDFFields();
-    
-    // Clear form and hide
-    cancelCustomField();
-    
-    // Show success message
-    showNotification(`Field "${name}" added successfully`, 'success');
-}
 
 function showNotification(message, type) {
     const notification = document.createElement('div');
@@ -711,21 +631,6 @@ function showNotification(message, type) {
     setTimeout(() => {
         notification.remove();
     }, 3000);
-}
-
-function clearFile() {
-    document.getElementById('pdf_file').value = '';
-    document.getElementById('file-preview').classList.add('hidden');
-    document.getElementById('pdf-editor').classList.add('hidden');
-    pdfFields = [];
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 // Form submission
@@ -759,45 +664,5 @@ document.getElementById('user1Form').addEventListener('submit', function(e) {
     console.log('📤 Field data JSON length:', fieldData.value.length);
     console.log('📤 Field data preview:', fieldData.value.substring(0, 200) + '...');
 });
-
-// Drag and drop functionality
-const dropArea = document.getElementById('file-drop-area');
-
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, preventDefaults, false);
-});
-
-function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-['dragenter', 'dragover'].forEach(eventName => {
-    dropArea.addEventListener(eventName, highlight, false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, unhighlight, false);
-});
-
-function highlight() {
-    dropArea.classList.add('border-blue-400', 'bg-blue-50');
-}
-
-function unhighlight() {
-    dropArea.classList.remove('border-blue-400', 'bg-blue-50');
-}
-
-dropArea.addEventListener('drop', handleDrop, false);
-
-function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    
-    if (files.length > 0) {
-        document.getElementById('pdf_file').files = files;
-        handleFileSelect(document.getElementById('pdf_file'));
-    }
-}
 </script>
 {% endblock %}

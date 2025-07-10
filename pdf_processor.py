@@ -566,47 +566,41 @@ class PDFProcessor:
                                 signature_y = rect.y0 + rect.height - 3
                                 signature_font_size = max(10, min(rect.height - 2, 14))
                                 
-                                try:
-                                    # Try Times Roman Italic (most commonly available cursive-like font)
-                                    page.insert_text(
-                                        (signature_x, signature_y),
-                                        signature_text,
-                                        fontsize=signature_font_size,
-                                        color=(0, 0, 0.8),  # Dark blue for signatures
-                                        fontname="tiri"  # Times Roman Italic
-                                    )
-                                    print(f"✅ Added cursive signature '{signature_text}' for '{field_name}' (Times Italic)")
-                                except Exception as font_error:
-                                    # Fallback to Helvetica Italic
+                                # Enhanced cursive font cascade for signatures
+                                cursive_fonts = [
+                                    ("tiri", "Times Roman Italic - Cursive Style"),
+                                    ("helv-oblique", "Helvetica Oblique - Cursive Style"),
+                                    ("heli", "Helvetica Italic - Cursive Style"),
+                                    ("coi", "Courier Italic - Cursive Style"),
+                                    ("times-italic", "Times Italic - Cursive Style")
+                                ]
+                                
+                                signature_added = False
+                                for font_name, font_description in cursive_fonts:
                                     try:
                                         page.insert_text(
                                             (signature_x, signature_y),
                                             signature_text,
                                             fontsize=signature_font_size,
-                                            color=(0, 0, 0.8),
-                                            fontname="heli"  # Helvetica Italic
+                                            color=(0, 0, 0.9),  # Deeper blue for cursive signatures
+                                            fontname=font_name
                                         )
-                                        print(f"✅ Added cursive signature '{signature_text}' for '{field_name}' (Helvetica Italic)")
-                                    except Exception as fallback_error:
-                                        # Try Courier Italic as final cursive attempt
-                                        try:
-                                            page.insert_text(
-                                                (signature_x, signature_y),
-                                                signature_text,
-                                                fontsize=signature_font_size,
-                                                color=(0, 0, 0.8),
-                                                fontname="coi"  # Courier Italic
-                                            )
-                                            print(f"✅ Added cursive signature '{signature_text}' for '{field_name}' (Courier Italic)")
-                                        except Exception as final_error:
-                                            # Final fallback to regular font
-                                            page.insert_text(
-                                                (signature_x, signature_y),
-                                                signature_text,
-                                                fontsize=signature_font_size,
-                                                color=(0, 0, 0.8)
-                                            )
-                                            print(f"✅ Added signature '{signature_text}' for '{field_name}' (regular font)")
+                                        print(f"✅ Added cursive signature '{signature_text}' for '{field_name}' ({font_description})")
+                                        signature_added = True
+                                        break
+                                    except Exception:
+                                        continue
+                                
+                                # Final fallback if no cursive fonts work
+                                if not signature_added:
+                                    page.insert_text(
+                                        (signature_x, signature_y),
+                                        signature_text,
+                                        fontsize=signature_font_size,
+                                        color=(0, 0, 0.9),  # Keep deeper blue even for fallback
+                                        render_mode=1  # Use text rendering mode 1 for slight italicization
+                                    )
+                                    print(f"✅ Added signature '{signature_text}' for '{field_name}' (fallback with text rendering)")
                                 
                                 filled_count += 1
                                 continue
@@ -649,14 +643,104 @@ class PDFProcessor:
             # Signature fields are now handled directly in the form field loop above
             print(f"📋 Signature fields filled directly in text boxes (no separate insertion needed)")
             
-            # All fields are now filled directly in form fields - no overlays needed
-            print(f"📋 All fields filled directly in PDF form fields (no overlay duplicates)")
+            # Handle manual fields that don't exist in the original PDF as overlays
+            manual_fields = [f for f in document.get('pdf_fields', []) if f.get('source') in ['manual_affidavit', 'manual'] and f.get('value')]
+            if manual_fields:
+                print(f"📋 Adding {len(manual_fields)} manual overlay fields")
+                for field in manual_fields:
+                    try:
+                        page_num = field.get('page', 0)
+                        if page_num >= len(doc):
+                            page_num = 0
+                        
+                        page = doc[page_num]
+                        position = field.get('position', {})
+                        
+                        # Use default position if not specified
+                        x = position.get('x', 100)
+                        y = position.get('y', 700)
+                        width = position.get('width', 200)
+                        height = position.get('height', 30)
+                        
+                        # Calculate text position
+                        text_x = x + 3
+                        text_y = y + height - 3
+                        
+                        field_value = field['value']
+                        field_name = field['name']
+                        
+                        # Handle signature fields differently
+                        if field.get('type') == 'signature':
+                            # Remove "typed:" prefix if present
+                            if field_value.startswith('typed:'):
+                                field_value = field_value[6:].strip()
+                            
+                            # Enhanced cursive font for manual signatures
+                            cursive_fonts = [
+                                ("tiri", "Times Roman Italic"),
+                                ("helv-oblique", "Helvetica Oblique"),
+                                ("heli", "Helvetica Italic"),
+                                ("coi", "Courier Italic")
+                            ]
+                            
+                            signature_added = False
+                            for font_name, font_description in cursive_fonts:
+                                try:
+                                    page.insert_text(
+                                        (text_x, text_y),
+                                        field_value,
+                                        fontsize=max(10, min(height - 2, 14)),
+                                        color=(0, 0, 0.9),  # Deeper blue for cursive signatures
+                                        fontname=font_name
+                                    )
+                                    print(f"✍️  Added manual cursive signature: '{field_value}' for '{field_name}' ({font_description})")
+                                    signature_added = True
+                                    break
+                                except Exception:
+                                    continue
+                            
+                            # Fallback if no cursive fonts work
+                            if not signature_added:
+                                page.insert_text(
+                                    (text_x, text_y),
+                                    field_value,
+                                    fontsize=max(10, min(height - 2, 14)),
+                                    color=(0, 0, 0.9),  # Keep deeper blue
+                                    render_mode=1  # Slight italicization
+                                )
+                                print(f"✍️  Added manual signature (enhanced fallback): '{field_value}' for '{field_name}'")
+                        else:
+                            # Regular text field
+                            page.insert_text(
+                                (text_x, text_y),
+                                field_value,
+                                fontsize=max(10, min(height - 2, 12)),
+                                color=(0, 0, 0)  # Black for regular text
+                            )
+                            print(f"📝 Added manual field: '{field_value}' for '{field_name}'")
+                        
+                        # Add field label for context (above the value)
+                        label_y = text_y - 15
+                        page.insert_text(
+                            (text_x, label_y),
+                            f"{field_name}:",
+                            fontsize=8,
+                            color=(0.3, 0.3, 0.3)  # Gray for labels
+                        )
+                        
+                        filled_count += 1
+                        
+                    except Exception as field_error:
+                        print(f"⚠️  Error adding manual field '{field.get('name', 'unknown')}': {field_error}")
+                        continue
+            else:
+                print(f"📋 No manual overlay fields found")
             
             # Save the document
             doc.save(output_path)
             doc.close()
             
-            print(f"✅ Successfully filled {filled_count} fields using PyMuPDF")
+            print(f"✅ Successfully filled {filled_count} fields using PyMuPDF (including manual overlays)")
             return True
             
         except Exception as e:
@@ -677,25 +761,40 @@ class PDFProcessor:
             text_x = x + 3  # Small left margin inside field
             text_y = y + height - 3  # 3 points from bottom of field
             
-            # Simple signature text insertion with italic font
-            try:
+            # Enhanced cursive signature text insertion
+            cursive_fonts = [
+                ("tiri", "Times Roman Italic"),
+                ("helv-oblique", "Helvetica Oblique"),
+                ("heli", "Helvetica Italic"),
+                ("coi", "Courier Italic")
+            ]
+            
+            signature_added = False
+            for font_name, font_description in cursive_fonts:
+                try:
+                    page.insert_text(
+                        (text_x, text_y),
+                        signature_text,
+                        fontsize=max(10, min(height - 2, 16)),
+                        color=(0, 0, 0.9),  # Deeper blue for cursive
+                        fontname=font_name
+                    )
+                    print(f"✍️  Inserted cursive signature '{signature_text}' for '{field_name}' ({font_description})")
+                    signature_added = True
+                    break
+                except Exception:
+                    continue
+            
+            # Enhanced fallback if no cursive fonts work
+            if not signature_added:
                 page.insert_text(
                     (text_x, text_y),
                     signature_text,
                     fontsize=max(10, min(height - 2, 16)),
-                    color=(0, 0, 0.7),  # Dark blue color
-                    fontname="helv-oblique"  # Simple italic font
+                    color=(0, 0, 0.9),  # Keep deeper blue
+                    render_mode=1  # Text rendering mode for slight italicization
                 )
-                print(f"✍️  Inserted signature text '{signature_text}' for '{field_name}'")
-            except:
-                # Fallback to default font if italic not available
-                page.insert_text(
-                    (text_x, text_y),
-                    signature_text,
-                    fontsize=max(10, min(height - 2, 16)),
-                    color=(0, 0, 0.7)
-                )
-                print(f"✍️  Inserted signature text '{signature_text}' for '{field_name}' (default font)")
+                print(f"✍️  Inserted signature '{signature_text}' for '{field_name}' (enhanced fallback)")
                 
         except Exception as e:
             print(f"⚠️  Error inserting signature text: {e}")
@@ -812,3 +911,203 @@ class PDFProcessor:
                 fields.append(field)
         
         return fields
+
+    def add_form_widgets_to_pdf(self, pdf_path: str, manual_fields: List[Dict[str, Any]], output_path: str) -> bool:
+        """Add actual form widgets to PDF for manual fields like Section 5"""
+        try:
+            print(f"🛠️  Adding form widgets for {len(manual_fields)} manual fields")
+            
+            import fitz
+            doc = fitz.open(pdf_path)
+            
+            for field in manual_fields:
+                try:
+                    page_num = field.get('page', 0)
+                    if page_num >= len(doc):
+                        page_num = 0
+                    
+                    page = doc[page_num]
+                    position = field.get('position', {})
+                    
+                    # Use default position if not specified
+                    x = position.get('x', 100)
+                    y = position.get('y', 700)
+                    width = position.get('width', 200)
+                    height = position.get('height', 30)
+                    
+                    # Create rectangle for the widget
+                    rect = fitz.Rect(x, y, x + width, y + height)
+                    
+                    # Determine widget type
+                    field_type = field.get('type', 'text')
+                    widget_type = 2  # TEXT field by default
+                    
+                    if field_type == 'signature':
+                        widget_type = 2  # TEXT field for signatures
+                    elif field_type == 'date':
+                        widget_type = 2  # TEXT field for dates
+                    elif field_type == 'tel':
+                        widget_type = 2  # TEXT field for telephone
+                    elif field_type == 'textarea':
+                        widget_type = 2  # TEXT field for textarea
+                    
+                    # Create the widget using correct PyMuPDF API
+                    widget = page.add_widget({
+                        "field_type": widget_type,
+                        "field_name": field.get('pdf_field_name', field['name']),
+                        "rect": rect,
+                        "field_value": field.get('value', ''),
+                        "field_flags": 0
+                    })
+                    
+                    if widget:
+                        print(f"✅ Added widget for '{field['name']}' at ({x}, {y})")
+                        
+                        # Add field label above the widget
+                        label_rect = fitz.Rect(x, y - 15, x + width, y)
+                        page.insert_textbox(
+                            label_rect,
+                            f"{field['name']}:",
+                            fontsize=8,
+                            color=(0.3, 0.3, 0.3),
+                            align=0
+                        )
+                    else:
+                        print(f"⚠️  Failed to create widget for '{field['name']}'")
+                
+                except Exception as widget_error:
+                    print(f"⚠️  Error creating widget for '{field.get('name', 'unknown')}': {widget_error}")
+                    continue
+            
+            # Save the PDF with new widgets
+            doc.save(output_path)
+            doc.close()
+            
+            print(f"✅ Successfully added {len(manual_fields)} form widgets to PDF")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error adding form widgets to PDF: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def create_overlay_pdf(self, pdf_path: str, pdf_fields: List[Dict[str, Any]], output_path: str) -> bool:
+        """Create an overlay PDF with text fields that don't exist in the original PDF"""
+        try:
+            print(f"🎯 Creating overlay PDF for fields that don't exist in original PDF")
+            
+            import fitz
+            doc = fitz.open(pdf_path)
+            
+            # Filter to only manual/overlay fields with values
+            overlay_fields = [f for f in pdf_fields if f.get('value') and f.get('source') in ['manual_affidavit', 'manual']]
+            print(f"📋 Found {len(overlay_fields)} overlay fields to add")
+            
+            for field in overlay_fields:
+                print(f"   - {field['name']}: '{field['value']}'")
+            
+            if not overlay_fields:
+                print("⚠️  No overlay fields found, copying original PDF")
+                doc.save(output_path)
+                doc.close()
+                return True
+            
+            # Add overlay text for each field
+            for field in overlay_fields:
+                try:
+                    page_num = field.get('page', 0)
+                    if page_num >= len(doc):
+                        page_num = 0
+                    
+                    page = doc[page_num]
+                    position = field.get('position', {})
+                    
+                    # Use default position if not specified
+                    x = position.get('x', 100)
+                    y = position.get('y', 700)
+                    width = position.get('width', 200)
+                    height = position.get('height', 30)
+                    
+                    # Calculate text position
+                    text_x = x + 3
+                    text_y = y + height - 3
+                    
+                    field_value = field['value']
+                    field_name = field['name']
+                    
+                    # Handle signature fields differently
+                    if field.get('type') == 'signature':
+                        # Remove "typed:" prefix if present
+                        if field_value.startswith('typed:'):
+                            field_value = field_value[6:].strip()
+                        
+                        # Enhanced cursive font for signature overlays
+                        cursive_fonts = [
+                            ("tiri", "Times Roman Italic"),
+                            ("helv-oblique", "Helvetica Oblique"),
+                            ("heli", "Helvetica Italic"),
+                            ("coi", "Courier Italic")
+                        ]
+                        
+                        signature_added = False
+                        for font_name, font_description in cursive_fonts:
+                            try:
+                                page.insert_text(
+                                    (text_x, text_y),
+                                    field_value,
+                                    fontsize=max(10, min(height - 2, 14)),
+                                    color=(0, 0, 0.9),  # Deeper blue for cursive signatures
+                                    fontname=font_name
+                                )
+                                print(f"✍️  Added cursive signature overlay: '{field_value}' for '{field_name}' ({font_description})")
+                                signature_added = True
+                                break
+                            except Exception:
+                                continue
+                        
+                        # Enhanced fallback if no cursive fonts work
+                        if not signature_added:
+                            page.insert_text(
+                                (text_x, text_y),
+                                field_value,
+                                fontsize=max(10, min(height - 2, 14)),
+                                color=(0, 0, 0.9),  # Keep deeper blue
+                                render_mode=1  # Text rendering mode for slight italicization
+                            )
+                            print(f"✍️  Added signature overlay (enhanced fallback): '{field_value}' for '{field_name}'")
+                    else:
+                        # Regular text field
+                        page.insert_text(
+                            (text_x, text_y),
+                            field_value,
+                            fontsize=max(10, min(height - 2, 12)),
+                            color=(0, 0, 0)  # Black for regular text
+                        )
+                        print(f"📝 Added text overlay: '{field_value}' for '{field_name}'")
+                    
+                    # Add field label for context (above the value)
+                    label_y = text_y - 15
+                    page.insert_text(
+                        (text_x, label_y),
+                        f"{field_name}:",
+                        fontsize=8,
+                        color=(0.3, 0.3, 0.3)  # Gray for labels
+                    )
+                    
+                except Exception as field_error:
+                    print(f"⚠️  Error adding overlay for field '{field.get('name', 'unknown')}': {field_error}")
+                    continue
+            
+            # Save the document with overlays
+            doc.save(output_path)
+            doc.close()
+            
+            print(f"✅ Successfully created overlay PDF with {len(overlay_fields)} additional fields")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error creating overlay PDF: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
