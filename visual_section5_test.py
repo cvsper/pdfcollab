@@ -48,9 +48,9 @@ def create_visual_section5_demo():
         },
         {
             'text': 'Jane M. Doe',
-            'position': (40, 480),
+            'position': (40, 470),
             'label': 'Signature:',
-            'label_position': (40, 465)
+            'label_position': (40, 455)
         },
         {
             'text': 'JANE MARIE DOE',

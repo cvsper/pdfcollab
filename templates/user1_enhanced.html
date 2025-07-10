@@ -15,31 +15,55 @@
     </div>
 
     <form method="POST" id="user1Form">
-        <!-- PDF Document Info Section -->
+        <!-- PDF Template Selection Section -->
         <div class="bg-white shadow sm:rounded-lg overflow-hidden">
             <div class="px-4 py-5 sm:p-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">PDF Document: homworks.pdf</h3>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Select PDF Template</h3>
                 <div class="mt-2 max-w-xl text-sm text-gray-500">
-                    <p>Using the local PDF document. We'll extract the form fields automatically and let you assign which fields User 2 should complete.</p>
+                    <p>Choose a template document to start your workflow. We'll extract the form fields automatically and let you assign which fields User 2 should complete.</p>
                 </div>
                 <div class="mt-5">
-                    <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
-                        <div class="flex items-center">
-                            <svg class="h-8 w-8 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
-                            </svg>
-                            <div class="ml-3">
-                                <p class="text-sm font-medium text-gray-900">homworks.pdf</p>
-                                <p class="text-sm text-gray-500">Local PDF file ready for processing</p>
+                    {% if templates %}
+                        <div class="space-y-3">
+                            {% for template in templates %}
+                            <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                <div class="flex items-center">
+                                    <input type="radio" name="template_id" value="{{ template.id }}" id="template_{{ loop.index }}" 
+                                           {% if loop.first %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                                    <svg class="h-8 w-8 text-red-500 ml-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <div class="ml-3">
+                                        <label for="template_{{ loop.index }}" class="text-sm font-medium text-gray-900 cursor-pointer">{{ template.name }}</label>
+                                        <p class="text-sm text-gray-500">{{ template.description or template.filename }}</p>
+                                        <p class="text-xs text-gray-400">{{ "%.1f"|format(template.file_size / 1024) }} KB</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-4">
+                            <button type="button" onclick="processSelectedTemplate()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                                </svg>
+                                Process Selected Template
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <div class="flex items-center">
+                                <svg class="h-8 w-8 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-900">No Templates Available</p>
+                                    <p class="text-sm text-gray-500">Contact your administrator to upload PDF templates</p>
+                                </div>
                             </div>
                         </div>
-                        <button type="button" onclick="processLocalPDF()" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-                            </svg>
-                            Process PDF
-                        </button>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -191,7 +215,7 @@ function testAPI() {
 }
 
 // Local PDF processing
-function processLocalPDF() {
+function processSelectedTemplate() {
     console.log('🔍 Processing local PDF file...');
     
     // Show PDF editor section
@@ -356,7 +380,7 @@ function renderPDFFields() {
             const improvedPositions = [
                 {x: 145, y: 135, width: 250, height: 25},   // Account Holder Name - final position
                 {x: 35, y: 255, width: 450, height: 80},   // Household Members - final position (larger)
-                {x: 40, y: 480, width: 200, height: 30},   // Signature - final position
+                {x: 40, y: 470, width: 200, height: 30},   // Signature - moved up 10 points
                 {x: 305, y: 480, width: 230, height: 25},  // Printed Name - final position
                 {x: 40, y: 525, width: 150, height: 25},   // Date - final position
                 {x: 305, y: 525, width: 150, height: 25}   // Telephone - final position

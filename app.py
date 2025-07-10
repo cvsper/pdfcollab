@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
+from flask_login import LoginManager, login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 from dotenv import load_dotenv
@@ -19,11 +20,24 @@ from io import BytesIO
 # Import new modules
 from supabase_client import SupabaseManager
 from pdf_processor import PDFProcessor
+from models import User, AnonymousUser
+from auth import auth_bp, init_auth
+from decorators import admin_required, document_access_required, document_edit_required, api_document_access_required, api_auth_required, api_admin_required
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-key-change-in-production')
+
+# Initialize Flask extensions
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
+login_manager.login_message = 'Please log in to access this page.'
+login_manager.login_message_category = 'info'
+login_manager.anonymous_user = AnonymousUser
+
+# Flask has built-in CSRF protection in forms when secret_key is set
 
 # Initialize database and PDF processor
 try:
@@ -37,6 +51,28 @@ except Exception as e:
     db = None
     pdf_processor = PDFProcessor()
     USE_DATABASE = False
+
+# Initialize authentication
+init_auth(app, db)
+
+# User loader for Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user by ID for Flask-Login"""
+    if not db:
+        return None
+    
+    try:
+        user_data = db.get_user_by_id(user_id)
+        if user_data and user_data.get('is_active', False):
+            return User(user_data)
+        return None
+    except Exception as e:
+        print(f"Error loading user {user_id}: {e}")
+        return None
+
+# Register blueprints
+app.register_blueprint(auth_bp, url_prefix='/auth')
 
 # File upload configuration
 UPLOAD_FOLDER = 'uploads'
@@ -256,7 +292,7 @@ def create_enhanced_pdf_with_section5(input_pdf_path, output_pdf_path):
                 'type': 'signature',
                 'assigned_to': 'user2',
                 'page': 4,  # Page 5 (0-indexed)
-                'position': {'x': 40, 'y': 480, 'width': 200, 'height': 30}
+                'position': {'x': 40, 'y': 470, 'width': 200, 'height': 30}
             },
             {
                 'name': 'Printed Name (Affidavit)',
@@ -1011,35 +1047,86 @@ def fill_pdf_fields(pdf_path, field_data, output_path):
     return fill_pdf_fields_advanced(pdf_path, {'pdf_fields': [], 'user1_data': field_data, 'user2_data': {}}, output_path)
 
 @app.route('/')
+@login_required
 def dashboard():
     """Home/Dashboard page - matches your React Dashboard component"""
-    documents = get_documents()
+    if USE_DATABASE and db:
+        # Get documents specific to this user
+        if current_user.is_admin():
+            # Admins can see all documents
+            documents = db.get_all_documents()
+        else:
+            # Regular users see only their documents and shared documents
+            documents = db.get_user_documents(current_user.id)
+    else:
+        # Fallback to mock data
+        documents = get_documents()
     return render_template('dashboard.html', documents=documents)
 
 @app.route('/start-workflow')
+@login_required
 def start_workflow():
     """Start new PDF workflow"""
     return redirect(url_for('user1_interface'))
 
 @app.route('/user1', methods=['GET', 'POST'])
+@login_required
 def user1_interface():
     """User 1 interface - matches your React UserOneInterface component"""
     if request.method == 'POST':
-        # Use local homworks.pdf file instead of uploaded file
-        local_pdf_path = os.path.join(os.getcwd(), 'homworks.pdf')
+        # Use template document from database (default template)
+        template_id = request.form.get('template_id', 'default')
         
-        if not os.path.exists(local_pdf_path):
-            flash('Local PDF file (homworks.pdf) not found', 'error')
-            return redirect(request.url)
-        
-        # Create document ID and copy local file to uploads folder
-        document_id = str(uuid.uuid4())
-        filename = 'homworks.pdf'
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{document_id}_{filename}")
-        
-        # Copy local PDF to uploads folder
-        import shutil
-        shutil.copy2(local_pdf_path, file_path)
+        if USE_DATABASE and db:
+            # Get template from database
+            templates = db.get_active_templates()
+            if not templates:
+                flash('No template documents available. Admin needs to upload templates.', 'error')
+                return redirect(request.url)
+            
+            # Use first template or specific one
+            template = templates[0] if template_id == 'default' else None
+            for t in templates:
+                if t['id'] == template_id:
+                    template = t
+                    break
+            
+            if not template:
+                template = templates[0]  # Fallback to first template
+            
+            # Get template file data
+            file_data = db.get_template_file_data(template['id'])
+            if not file_data:
+                flash('Error accessing template document', 'error')
+                return redirect(request.url)
+            
+            # Save template to uploads folder for processing
+            document_id = str(uuid.uuid4())
+            filename = template['filename']
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{document_id}_{filename}")
+            
+            try:
+                with open(file_path, 'wb') as f:
+                    f.write(file_data)
+                print(f"✅ Using template document: {template['name']}")
+            except Exception as e:
+                flash(f'Error creating document from template: {str(e)}', 'error')
+                return redirect(request.url)
+        else:
+            # Fallback for development - use local file
+            local_pdf_path = os.path.join(os.getcwd(), 'homworks.pdf')
+            
+            if not os.path.exists(local_pdf_path):
+                flash('No template documents available', 'error')
+                return redirect(request.url)
+            
+            document_id = str(uuid.uuid4())
+            filename = 'homworks.pdf'
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{document_id}_{filename}")
+            
+            import shutil
+            shutil.copy2(local_pdf_path, file_path)
+            print(f"✅ Using local template file: {filename}")
         
         # Get form data from User 1
         user1_data = {
@@ -1103,7 +1190,7 @@ def user1_interface():
         else:
             print("⚠️  No PDF fields data received from User 1")
         
-        # Add to mock data
+        # Create document data
         new_document = {
             'id': document_id,
             'name': filename,
@@ -1115,6 +1202,27 @@ def user1_interface():
             'pdf_fields': pdf_analysis['fields'],
             'field_assignments': {field['id']: field['assigned_to'] for field in pdf_analysis['fields']}
         }
+        
+        # Save document to database with current user as owner
+        if USE_DATABASE and db:
+            try:
+                db.create_document(
+                    document_id=document_id,
+                    name=filename,
+                    file_path=file_path,
+                    owner_id=current_user.id,
+                    metadata={
+                        'user1_data': user1_data,
+                        'pdf_fields': pdf_analysis['fields'],
+                        'field_assignments': {field['id']: field['assigned_to'] for field in pdf_analysis['fields']}
+                    }
+                )
+                print(f"✅ Document saved to database with owner: {current_user.id}")
+            except Exception as e:
+                print(f"⚠️ Error saving to database: {e}")
+                # Continue with mock data as fallback
+        
+        # Add to mock data for fallback
         
         print(f"📄 Adding new document to MOCK_DOCUMENTS:")
         print(f"   📋 Document ID: {document_id}")
@@ -1138,9 +1246,16 @@ def user1_interface():
         flash('Document processed and sent to User 2!', 'success')
         return redirect(url_for('dashboard'))
     
-    return render_template('user1_enhanced.html')
+    # Get available templates for the form
+    templates = []
+    if USE_DATABASE and db:
+        templates = db.get_active_templates()
+    
+    return render_template('user1_enhanced.html', templates=templates)
 
 @app.route('/user2/<document_id>', methods=['GET', 'POST'])
+@login_required
+@document_access_required
 def user2_interface(document_id):
     """User 2 interface - matches your React UserTwoInterface component"""
     document = get_document_by_id(document_id)
@@ -1232,6 +1347,8 @@ def user2_interface(document_id):
     return render_template('user2_enhanced.html', document=document)
 
 @app.route('/complete/<document_id>')
+@login_required
+@document_access_required
 def completion_page(document_id):
     """Completion page - matches your React CompletionPage component"""
     document = get_document_by_id(document_id)
@@ -1242,6 +1359,8 @@ def completion_page(document_id):
     return render_template('completion.html', document=document)
 
 @app.route('/download/<document_id>')
+@login_required
+@document_access_required
 def download_document(document_id):
     """Download completed PDF document"""
     print(f"🔽 Download request for document: {document_id}")
@@ -1309,6 +1428,8 @@ def download_document(document_id):
         return redirect(url_for('completion_page', document_id=document_id))
 
 @app.route('/api/pdf-fields/<document_id>')
+@login_required
+@api_document_access_required
 def get_pdf_fields(document_id):
     """API endpoint to get PDF fields for a document"""
     document = get_document_by_id(document_id)
@@ -1339,6 +1460,8 @@ def get_pdf_fields(document_id):
     return jsonify({'error': 'No PDF file found'}), 404
 
 @app.route('/api/assign-field/<document_id>', methods=['POST'])
+@login_required
+@api_document_access_required
 def assign_field(document_id):
     """API endpoint to assign a field to a user"""
     document = get_document_by_id(document_id)
@@ -1371,6 +1494,8 @@ def assign_field(document_id):
     return jsonify({'success': True, 'field_id': field_id, 'assigned_to': assigned_to})
 
 @app.route('/api/update-field/<document_id>', methods=['POST'])
+@login_required
+@api_document_access_required
 def update_field_value(document_id):
     """API endpoint to update a field value"""
     document = get_document_by_id(document_id)
@@ -1510,6 +1635,8 @@ def get_pdf_preview_local():
         return jsonify({'error': f'Failed to generate local PDF preview: {str(e)}'}), 500
 
 @app.route('/api/pdf-preview/<document_id>')
+@login_required
+@api_document_access_required
 def get_pdf_preview(document_id):
     """API endpoint to get PDF preview image"""
     document = get_document_by_id(document_id)
@@ -1622,6 +1749,8 @@ def get_pdf_page(file_path, page_num):
         return jsonify({'error': f'Failed to generate PDF page: {str(e)}'}), 500
 
 @app.route('/api/save-fields/<document_id>', methods=['POST'])
+@login_required
+@api_document_access_required
 def save_fields(document_id):
     """API endpoint to save PDF fields"""
     try:
@@ -1656,6 +1785,8 @@ def save_fields(document_id):
         return jsonify({'error': f'Failed to save fields: {str(e)}'}), 500
 
 @app.route('/api/pdf-editor/<document_id>')
+@login_required
+@document_access_required
 def pdf_editor_page(document_id):
     """PDF Editor page"""
     document = get_document_by_id(document_id)
@@ -1666,6 +1797,8 @@ def pdf_editor_page(document_id):
     return render_template('pdf_editor.html', document=document)
 
 @app.route('/api/field-config/<document_id>/<field_id>', methods=['GET', 'POST'])
+@login_required
+@api_document_access_required
 def field_configuration(document_id, field_id):
     """Get or save field configuration"""
     if request.method == 'GET':
@@ -1706,6 +1839,8 @@ def update_field_position_api(field_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/preview/<document_id>')
+@login_required
+@document_access_required
 def preview_document(document_id):
     """Preview document page"""
     document = get_document_by_id(document_id)
@@ -1716,6 +1851,8 @@ def preview_document(document_id):
     return render_template('preview.html', document=document)
 
 @app.route('/api/debug-pdf/<document_id>')
+@login_required
+@api_document_access_required
 def debug_pdf_extraction(document_id):
     """Debug endpoint to test PDF field extraction"""
     document = get_document_by_id(document_id)

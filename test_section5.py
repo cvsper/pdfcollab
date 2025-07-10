@@ -110,7 +110,7 @@ def create_test_document_with_section5():
             'value': 'typed:Jane M. Doe',
             'assigned_to': 'user2',
             'page': 4,  # Page 5 (0-indexed)
-            'position': {'x': 40, 'y': 480, 'width': 200, 'height': 30},
+            'position': {'x': 40, 'y': 470, 'width': 200, 'height': 30},
             'source': 'manual_affidavit'
         },
         {

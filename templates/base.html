@@ -21,11 +21,36 @@
                 <div class="flex items-center">
                     <h1 class="text-2xl font-bold text-gray-900">PDF Collaborator</h1>
                 </div>
-                <!-- User profile placeholder -->
-                <div class="flex items-center">
-                    <span class="bg-gray-200 rounded-full h-8 w-8 flex items-center justify-center">
-                        <span class="text-gray-600 font-bold">U</span>
-                    </span>
+                <!-- User profile and navigation -->
+                <div class="flex items-center space-x-4">
+                    {% if current_user.is_authenticated %}
+                    <div class="relative">
+                        <button type="button" class="bg-white rounded-full flex text-sm" onclick="toggleDropdown()">
+                            <span class="sr-only">Open user menu</span>
+                            <span class="bg-blue-600 rounded-full h-8 w-8 flex items-center justify-center">
+                                <span class="text-white font-bold">{{ current_user.name[0] if current_user.name else 'U' }}</span>
+                            </span>
+                        </button>
+                        <div id="userDropdown" class="hidden absolute right-0 z-10 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5">
+                            <div class="px-4 py-2 text-sm text-gray-700 border-b">
+                                Signed in as <strong>{{ current_user.name or current_user.email }}</strong>
+                                {% if current_user.is_admin() %}
+                                <br><span class="text-xs text-purple-600 font-medium">Admin</span>
+                                {% endif %}
+                            </div>
+                            <a href="{{ url_for('auth.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+                            {% if current_user.is_admin() %}
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Panel</a>
+                            {% endif %}
+                            <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="flex items-center space-x-2">
+                        <a href="{{ url_for('auth.login') }}" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Sign in</a>
+                        <a href="{{ url_for('auth.register') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">Sign up</a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             
@@ -124,6 +149,24 @@
                 el.style.display = 'none';
             });
         }, 5000);
+        
+        // User dropdown toggle functionality
+        function toggleDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('userDropdown');
+            const button = event.target.closest('button');
+            
+            if (!button || !button.onclick || button.onclick.toString().indexOf('toggleDropdown') === -1) {
+                if (dropdown && !dropdown.classList.contains('hidden')) {
+                    dropdown.classList.add('hidden');
+                }
+            }
+        });
     </script>
 </body>
 </html>
