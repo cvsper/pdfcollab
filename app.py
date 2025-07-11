@@ -1538,66 +1538,66 @@ def user1_interface():
                     continue
                     
                 matched = False
-                    
-                    # Handle dwelling type
-                    if form_field == 'dwelling_type':
-                        dwelling_mappings = {
-                            'single_family': 'Single Family Home (Checkbox)',
-                            'apartment': 'Apartment (Checkbox)', 
-                            'condominium': 'Condominium (Checkbox)'
-                        }
-                        target_field = dwelling_mappings.get(form_value)
-                        if target_field:
-                            for field in pdf_fields:
-                                if field['name'] == target_field:
-                                    field['value'] = 'true'
-                                    field['assigned_to'] = 'user1'
-                                    field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
-                                    matched = True
-                                    special_case_matches += 1
-                                    print(f"   ✅ Dwelling type: {form_value} → {target_field}")
-                                    break
-                    
-                    # Handle heating fuel
-                    elif form_field == 'heating_fuel':
-                        fuel_mappings = {
-                            'electric': 'Electric Heat (Radio Button)',
-                            'natural_gas': 'Gas Heat (Radio Button)',
-                            'oil': 'Oil Heat (Radio Button)', 
-                            'propane': 'Propane Heat (Radio Button)'
-                        }
-                        target_field = fuel_mappings.get(form_value)
-                        if target_field:
-                            for field in pdf_fields:
-                                if field['name'] == target_field:
-                                    field['value'] = 'true'
-                                    field['assigned_to'] = 'user1'
-                                    field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
-                                    matched = True
-                                    special_case_matches += 1
-                                    print(f"   ✅ Heating fuel: {form_value} → {target_field}")
-                                    break
-                    
-                    # Handle applicant type
-                    elif form_field == 'applicant_type':
-                        type_mappings = {
-                            'property_owner': 'Property Owner (Radio Button)',
-                            'renter_tenant': 'Renter (Radio Button)'
-                        }
-                        target_field = type_mappings.get(form_value)
-                        if target_field:
-                            for field in pdf_fields:
-                                if field['name'] == target_field:
-                                    field['value'] = 'true'
-                                    field['assigned_to'] = 'user1'
-                                    field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
-                                    matched = True
-                                    special_case_matches += 1
-                                    print(f"   ✅ Applicant type: {form_value} → {target_field}")
-                                    break
-                    
-                    if not matched:
-                        print(f"   ❓ Unmatched form field: {form_field} = {form_value}")
+                
+                # Handle dwelling type
+                if form_field == 'dwelling_type':
+                    dwelling_mappings = {
+                        'single_family': 'Single Family Home (Checkbox)',
+                        'apartment': 'Apartment (Checkbox)', 
+                        'condominium': 'Condominium (Checkbox)'
+                    }
+                    target_field = dwelling_mappings.get(form_value)
+                    if target_field:
+                        for field in pdf_fields:
+                            if field['name'] == target_field:
+                                field['value'] = 'true'
+                                field['assigned_to'] = 'user1'
+                                field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                                matched = True
+                                special_case_matches += 1
+                                print(f"   ✅ Dwelling type: {form_value} → {target_field}")
+                                break
+                
+                # Handle heating fuel
+                elif form_field == 'heating_fuel':
+                    fuel_mappings = {
+                        'electric': 'Electric Heat (Radio Button)',
+                        'natural_gas': 'Gas Heat (Radio Button)',
+                        'oil': 'Oil Heat (Radio Button)', 
+                        'propane': 'Propane Heat (Radio Button)'
+                    }
+                    target_field = fuel_mappings.get(form_value)
+                    if target_field:
+                        for field in pdf_fields:
+                            if field['name'] == target_field:
+                                field['value'] = 'true'
+                                field['assigned_to'] = 'user1'
+                                field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                                matched = True
+                                special_case_matches += 1
+                                print(f"   ✅ Heating fuel: {form_value} → {target_field}")
+                                break
+                
+                # Handle applicant type
+                elif form_field == 'applicant_type':
+                    type_mappings = {
+                        'property_owner': 'Property Owner (Radio Button)',
+                        'renter_tenant': 'Renter (Radio Button)'
+                    }
+                    target_field = type_mappings.get(form_value)
+                    if target_field:
+                        for field in pdf_fields:
+                            if field['name'] == target_field:
+                                field['value'] = 'true'
+                                field['assigned_to'] = 'user1'
+                                field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                                matched = True
+                                special_case_matches += 1
+                                print(f"   ✅ Applicant type: {form_value} → {target_field}")
+                                break
+                
+                if not matched:
+                    print(f"   ❓ Unmatched form field: {form_field} = {form_value}")
             
             # Ensure all unassigned fields go to user1
             for field in pdf_fields:
