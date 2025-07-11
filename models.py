@@ -131,6 +131,8 @@ class Document(db.Model):
             'original_filename': self.original_filename,
             'status': self.status.value if self.status else 'Draft',
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'created_by': self.created_by_id,  # For compatibility with mock documents
+            'created_by_id': self.created_by_id,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'lastUpdated': self.updated_at.strftime('%B %d, %Y') if self.updated_at else 'Recently',
@@ -140,7 +142,8 @@ class Document(db.Model):
             'user1_data': user1_data,
             'user2_data': user2_data,
             'invitation_sent': self.doc_metadata.get('invitation_sent', False),
-            'invitation_sent_at': self.doc_metadata.get('invitation_sent_at')
+            'invitation_sent_at': self.doc_metadata.get('invitation_sent_at'),
+            'file_path': self.file_path  # Include file_path for document operations
         }
     
     def get_fields_by_user(self, user_role):

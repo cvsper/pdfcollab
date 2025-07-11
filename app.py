@@ -323,7 +323,7 @@ def get_documents(user_id=None):
         try:
             # Query documents from the database
             if user_id:
-                documents = Document.query.filter_by(created_by=user_id).all()
+                documents = Document.query.filter_by(created_by_id=user_id).all()
             else:
                 documents = Document.query.all()
             # Convert to dictionary format for template compatibility
