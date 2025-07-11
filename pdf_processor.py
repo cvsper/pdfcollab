@@ -59,7 +59,7 @@ class PDFProcessor:
             'Applicant Signature': 'signature3',
             'Property Owner Signature': 'property_ower_sig3',
             
-            # Date fields
+            # Date fields - map to specific widget names based on Y position
             'Date': 'date',  # Generic mapping for Date fields
             
             # Qualification checkboxes (Option A)
@@ -78,7 +78,7 @@ class PDFProcessor:
             'Multifam4 (Checkbox)': 'multifam4',
             
             # Section 3 text fields
-            'People In Household4': 'household_size4',
+            'People In Household4': 'people_in_household4',
             'People In Household Overage4': 'adults_count4',
             'Annual Income4': 'annual_income4'
         }
@@ -640,6 +640,16 @@ class PDFProcessor:
                         # Use field_type_map to get the actual PDF field name
                         display_name = field['name']
                         pdf_field_name = self.field_type_map.get(display_name, field.get('pdf_field_name', display_name))
+                        
+                        # Special handling for Date fields - map to specific widget names based on Y position
+                        if display_name == 'Date' and field.get('position', {}).get('y'):
+                            field_position_y = field['position']['y']
+                            if 460 <= field_position_y <= 480:
+                                pdf_field_name = 'date3'  # Date field near Applicant Signature
+                                print(f"🎯 Mapped Date field at y={field_position_y} to widget 'date3'")
+                            elif field_position_y > 630:
+                                pdf_field_name = 'date_property_mang3'  # Date field near Property Owner Signature
+                                print(f"🎯 Mapped Date field at y={field_position_y} to widget 'date_property_mang3'")
                         
                         # If still no mapping found, try removing suffix
                         if pdf_field_name == display_name and ' (' in display_name:
