@@ -59,6 +59,9 @@ class PDFProcessor:
             'Applicant Signature': 'signature3',
             'Property Owner Signature': 'property_ower_sig3',
             
+            # Date fields
+            'Date': 'date',  # Generic mapping for Date fields
+            
             # Qualification checkboxes (Option A)
             'Elec Discount4 (Checkbox)': 'elec_discount4',
             'Low Income Program (Checkbox)': 'low_income4',

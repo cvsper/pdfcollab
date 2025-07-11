@@ -1617,14 +1617,18 @@ def user1_interface():
                 for program in utility_programs:
                     target_field = program_mappings.get(program)
                     if target_field:
+                        field_found = False
                         for field in pdf_fields:
                             if field['name'] == target_field:
                                 field['value'] = 'true'
                                 field['assigned_to'] = 'user1'
                                 field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
                                 special_case_matches += 1
+                                field_found = True
                                 print(f"   ✅ Utility program: {program} → {target_field}")
                                 break
+                        if not field_found:
+                            print(f"   ❌ Field not found for utility program: {program} → {target_field}")
             
             # Option B: Documentation
             documentation = form_data.get('documentation', [])
@@ -1639,14 +1643,18 @@ def user1_interface():
                 for doc in documentation:
                     target_field = doc_mappings.get(doc)
                     if target_field:
+                        field_found = False
                         for field in pdf_fields:
                             if field['name'] == target_field:
                                 field['value'] = 'true'
                                 field['assigned_to'] = 'user1'
                                 field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
                                 special_case_matches += 1
+                                field_found = True
                                 print(f"   ✅ Documentation: {doc} → {target_field}")
                                 break
+                        if not field_found:
+                            print(f"   ❌ Field not found for documentation: {doc} → {target_field}")
             
             # Option D: Multifamily
             if form_data.get('qualification_option') == 'option_d':
@@ -1985,21 +1993,31 @@ def user2_interface(document_id):
         if 'pdf_fields' in document:
             print(f"📋 Found {len(document['pdf_fields'])} PDF fields in document")
             
-            # FIRST: Fix signature fields that may be incorrectly assigned to user1
-            signature_fields_fixed = 0
+            # FIRST: Fix signature and date fields that may be incorrectly assigned to user1
+            fields_fixed = 0
             for field in document['pdf_fields']:
                 field_name = field.get('name', '')
+                field_position_y = field.get('position', {}).get('y', 0)
+                
                 # Check if this is a signature field that should belong to user2
                 if (('Applicant Signature' in field_name or 'Property Owner Signature' in field_name or 
                      field_name in ['signature3', 'property_ower_sig3']) and 
                     field.get('assigned_to') == 'user1'):
                     field['assigned_to'] = 'user2'
                     field['type'] = 'signature'
-                    signature_fields_fixed += 1
+                    fields_fixed += 1
                     print(f"🔧 Fixed assignment: '{field_name}' reassigned from user1 to user2")
+                
+                # Check if this is a date field that should belong to user2
+                elif field_name == 'Date' and field.get('assigned_to') == 'user1':
+                    # Date fields near signatures should be user2
+                    if (460 <= field_position_y <= 480) or (field_position_y > 630):
+                        field['assigned_to'] = 'user2'
+                        fields_fixed += 1
+                        print(f"🔧 Fixed assignment: Date field at y={field_position_y} reassigned from user1 to user2")
             
-            if signature_fields_fixed > 0:
-                print(f"✅ Fixed {signature_fields_fixed} signature fields that were incorrectly assigned to user1")
+            if fields_fixed > 0:
+                print(f"✅ Fixed {fields_fixed} fields that were incorrectly assigned to user1")
             
             user2_fields = [f for f in document['pdf_fields'] if f['assigned_to'] == 'user2']
             print(f"📝 User 2 is assigned {len(user2_fields)} fields:")
@@ -2045,6 +2063,22 @@ def user2_interface(document_id):
                         
                         else:
                             print(f"⚠️  Signature field '{field_name}' found but no matching signature data")
+                    
+                    # Special handling for date fields
+                    if field.get('name') == 'Date' or 'date' in field.get('name', '').lower():
+                        field_position_y = field.get('position', {}).get('y', 0)
+                        
+                        # Map authorization_date to Date field near Applicant Signature (y ~471)
+                        if 460 <= field_position_y <= 480 and user2_data.get('authorization_date'):
+                            field['value'] = user2_data['authorization_date']
+                            field['assigned_to'] = 'user2'
+                            print(f"📅 Applied authorization date to field at y={field_position_y}: '{user2_data['authorization_date']}'")
+                        
+                        # Map owner_signature_date to Date field near Property Owner Signature (y ~643)
+                        elif field_position_y > 630 and user2_data.get('owner_signature_date'):
+                            field['value'] = user2_data['owner_signature_date']
+                            field['assigned_to'] = 'user2'
+                            print(f"📅 Applied owner signature date to field at y={field_position_y}: '{user2_data['owner_signature_date']}'")
         else:
             print("❌ No pdf_fields found in document")
         
