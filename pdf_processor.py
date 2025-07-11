@@ -595,83 +595,17 @@ class PDFProcessor:
                     if field_name and field_name in field_mapping:
                         # Handle signature fields with EXACT positioning and correct orientation
                         if field_name in signature_fields:
+                            print(f"🎯 Processing signature field: {field_name}")
                             try:
                                 signature_text = signature_fields[field_name]['value']
                                 # Remove "typed:" prefix if present
                                 if signature_text.startswith('typed:'):
                                     signature_text = signature_text[6:].strip()
                                 
-                                # Clear the form field
-                                widget.field_value = ""
+                                # SIMPLIFIED APPROACH: Just set the form field value directly
+                                widget.field_value = signature_text
                                 widget.update()
-                                
-                                # Use WIDGET-BASED positioning with proper text orientation
-                                rect = widget.rect
-                                
-                                # Use exact coordinates - FIXED DIRECTIONS (down = decrease Y)
-                                if field_name in ['Applicant Signature', 'signature3']:
-                                    # Current (66, 157) - 5 down = (66, 152) 
-                                    signature_x = 66
-                                    signature_y = 152
-                                    print(f"🎯 Applicant Signature widget: ({rect.x0:.0f}, {rect.y0:.0f}) to ({rect.x1:.0f}, {rect.y1:.0f})")
-                                    print(f"🎯 Using FIXED coordinates (Applicant 5 down): ({signature_x:.0f}, {signature_y:.0f})")
-                                elif field_name in ['Property Owner Signature', 'property_ower_sig3']:
-                                    # Property Owner: Use widget center coordinates for visibility
-                                    signature_x = rect.x0 + 50  # 50 pixels right from widget start
-                                    signature_y = rect.y0 + 10   # 10 pixels down from widget start
-                                    print(f"🎯 Property Owner Signature widget: ({rect.x0:.0f}, {rect.y0:.0f}) to ({rect.x1:.0f}, {rect.y1:.0f})")
-                                    print(f"🎯 Using WIDGET-BASED coordinates (Property Owner): ({signature_x:.0f}, {signature_y:.0f})")
-                                else:
-                                    # Fallback positioning
-                                    signature_x = rect.x0 + 5
-                                    signature_y = rect.y0 + rect.height * 0.75
-                                    print(f"⚠️  Using fallback position for signature field: {field_name}")
-                
-                                
-                                signature_font_size = 10  # Smaller font to fit in widget
-                                
-                                try:
-                                    # Fix text orientation - use proper transformation matrix
-                                    # Create transformation matrix for normal text orientation
-                                    # Matrix(a, b, c, d, e, f) where:
-                                    # a=1, d=1 for normal scaling
-                                    # b=0, c=0 for no rotation/skew
-                                    # e,f for translation
-                                    text_matrix = fitz.Matrix(1, 0, 0, 1, 0, 0)  # Identity matrix for normal orientation
-                                    
-                                    # Insert text with proper orientation
-                                    text_writer = fitz.TextWriter(page.rect)
-                                    text_writer.append(
-                                        (signature_x, signature_y),
-                                        signature_text,
-                                        fontsize=signature_font_size,
-                                        fontname="helv"
-                                    )
-                                    text_writer.write_text(page, color=(0, 0, 0.8))
-                                    print(f"✅ Added signature '{signature_text}' for '{field_name}' using TextWriter at ({signature_x:.0f}, {signature_y:.0f})")
-                                except Exception as text_writer_error:
-                                    print(f"⚠️  TextWriter failed: {text_writer_error}, trying insert_text with matrix...")
-                                    try:
-                                        # Alternative: Fix backwards text by only flipping Y axis (keep X normal)
-                                        # Matrix(a, b, c, d, e, f) - try just Y flip: a=1, d=-1 to fix upside down only
-                                        page.insert_text(
-                                            (signature_x, signature_y),
-                                            signature_text,
-                                            fontsize=signature_font_size,
-                                            color=(0, 0, 0.8),
-                                            morph=(fitz.Point(signature_x, signature_y), fitz.Matrix(1, 0, 0, -1, 0, 0))
-                                        )
-                                        print(f"✅ Added signature '{signature_text}' for '{field_name}' with FLIPPED matrix at ({signature_x:.0f}, {signature_y:.0f})")
-                                    except Exception as matrix_error:
-                                        print(f"⚠️  Matrix approach failed: {matrix_error}, using simple insert_text...")
-                                        # Final fallback
-                                        page.insert_text(
-                                            (signature_x, signature_y),
-                                            signature_text,
-                                            fontsize=signature_font_size,
-                                            color=(0, 0, 0.8)
-                                        )
-                                        print(f"✅ Added signature '{signature_text}' for '{field_name}' (simple fallback) at ({signature_x:.0f}, {signature_y:.0f})")
+                                print(f"✅ Set form field '{field_name}' to '{signature_text}'")
                                 
                                 filled_count += 1
                                 continue
