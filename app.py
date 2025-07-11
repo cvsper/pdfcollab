@@ -1599,6 +1599,67 @@ def user1_interface():
                 if not matched:
                     print(f"   ❓ Unmatched form field: {form_field} = {form_value}")
             
+            # Handle qualification option checkboxes (Options A, B, C, D)
+            print(f"\n🔍 DEBUG: Handling qualification checkboxes...")
+            
+            # Option A: Utility programs
+            utility_programs = form_data.get('utility_program', [])
+            if utility_programs:
+                print(f"   📋 Option A - Utility programs selected: {utility_programs}")
+                program_mappings = {
+                    'electric_discount': 'elec_discount4',
+                    'matching_payment': 'matching_payment_eversource4',  
+                    'low_income_discount': 'low_income4',
+                    'bill_forgiveness': 'bill_forgive4',
+                    'matching_payment_united': 'matching_pay_united4'
+                }
+                
+                for program in utility_programs:
+                    target_field = program_mappings.get(program)
+                    if target_field:
+                        for field in pdf_fields:
+                            if field['name'] == target_field:
+                                field['value'] = 'true'
+                                field['assigned_to'] = 'user1'
+                                field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                                special_case_matches += 1
+                                print(f"   ✅ Utility program: {program} → {target_field}")
+                                break
+            
+            # Option B: Documentation
+            documentation = form_data.get('documentation', [])
+            if documentation:
+                print(f"   📋 Option B - Documentation selected: {documentation}")
+                doc_mappings = {
+                    'ebt_award': 'ebt4',
+                    'energy_assistance': 'energy_award_letter4',
+                    'section_8': 'section_eight4'
+                }
+                
+                for doc in documentation:
+                    target_field = doc_mappings.get(doc)
+                    if target_field:
+                        for field in pdf_fields:
+                            if field['name'] == target_field:
+                                field['value'] = 'true'
+                                field['assigned_to'] = 'user1'
+                                field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                                special_case_matches += 1
+                                print(f"   ✅ Documentation: {doc} → {target_field}")
+                                break
+            
+            # Option D: Multifamily
+            if form_data.get('qualification_option') == 'option_d':
+                print(f"   📋 Option D - Multifamily selected")
+                for field in pdf_fields:
+                    if field['name'] == 'multifam4':
+                        field['value'] = 'true'
+                        field['assigned_to'] = 'user1'
+                        field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                        special_case_matches += 1
+                        print(f"   ✅ Multifamily option selected")
+                        break
+            
             # Ensure all unassigned fields go to user1
             for field in pdf_fields:
                 if field.get('assigned_to') is None:
