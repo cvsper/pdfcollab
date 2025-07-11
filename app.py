@@ -1925,7 +1925,7 @@ def user2_interface(document_id):
                     file.save(support_path)
                     supporting_docs.append({'filename': filename, 'path': support_path})
         
-        # Update document
+        # Update document - CRITICAL: Save the updated pdf_fields too!
         updated_document = None
         for doc in MOCK_DOCUMENTS:
             if doc['id'] == document_id:
@@ -1934,7 +1934,8 @@ def user2_interface(document_id):
                     'user2_data': user2_data,
                     'supporting_docs': supporting_docs,
                     'completed_at': datetime.now().isoformat(),
-                    'lastUpdated': 'Just now'
+                    'lastUpdated': 'Just now',
+                    'pdf_fields': document.get('pdf_fields', [])  # Save updated pdf_fields with signature data
                 })
                 updated_document = doc
                 break
