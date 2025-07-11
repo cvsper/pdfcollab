@@ -1607,11 +1607,11 @@ def user1_interface():
             if utility_programs:
                 print(f"   📋 Option A - Utility programs selected: {utility_programs}")
                 program_mappings = {
-                    'electric_discount': 'elec_discount4',
-                    'matching_payment': 'matching_payment_eversource4',  
-                    'low_income_discount': 'low_income4',
-                    'bill_forgiveness': 'bill_forgive4',
-                    'matching_payment_united': 'matching_pay_united4'
+                    'electric_discount': 'Elec Discount4 (Checkbox)',
+                    'matching_payment': 'Matching Payment Eversource4 (Checkbox)',  
+                    'low_income_discount': 'Low Income Program (Checkbox)',
+                    'bill_forgiveness': 'Bill Forgiveness Program (Checkbox)',
+                    'matching_payment_united': 'Matching Pay United4 (Checkbox)'
                 }
                 
                 for program in utility_programs:
@@ -1631,9 +1631,9 @@ def user1_interface():
             if documentation:
                 print(f"   📋 Option B - Documentation selected: {documentation}")
                 doc_mappings = {
-                    'ebt_award': 'ebt4',
-                    'energy_assistance': 'energy_award_letter4',
-                    'section_8': 'section_eight4'
+                    'ebt_award': 'EBT (Food Stamps) (Checkbox)',
+                    'energy_assistance': 'Energy Award Letter4 (Checkbox)',
+                    'section_8': 'Section Eight4 (Checkbox)'
                 }
                 
                 for doc in documentation:
@@ -1652,7 +1652,7 @@ def user1_interface():
             if form_data.get('qualification_option') == 'option_d':
                 print(f"   📋 Option D - Multifamily selected")
                 for field in pdf_fields:
-                    if field['name'] == 'multifam4':
+                    if field['name'] == 'Multifam4 (Checkbox)':
                         field['value'] = 'true'
                         field['assigned_to'] = 'user1'
                         field['pdf_field_name'] = field.get('pdf_field_name', field['name'])

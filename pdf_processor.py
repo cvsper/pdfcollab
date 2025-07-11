@@ -15,6 +15,70 @@ class PDFProcessor:
             '/Ch': 'select',
             '/Sig': 'signature'
         }
+        
+        # Map from display names (with suffixes) to actual PDF field names
+        self.field_type_map = {
+            # Property fields
+            'Property Address': 'property_address1',
+            'Apartment Number': 'apartment_num1',
+            'City': 'city1',
+            'State': 'state1',
+            'ZIP Code': 'zip1',
+            'Num Of Apt1': 'num_of_apt1',
+            
+            # Personal info
+            'First Name': 'first_name2',
+            'Last Name': 'last_name2',
+            'Phone Number': 'phone2',
+            'Email Address': 'email2',
+            
+            # Dwelling type checkboxes
+            'Single Family Home (Checkbox)': 'dwelling_single_fam1',
+            'Apartment (Checkbox)': 'dwelling_apartment1', 
+            'Condominium (Checkbox)': 'dwelling_condo1',
+            
+            # Heating fuel radio buttons
+            'Electric Heat (Radio Button)': 'fuel_type_elec2',
+            'Gas Heat (Radio Button)': 'fuel_type_gas2',
+            'Oil Heat (Radio Button)': 'fuel_type_oil2',
+            'Propane Heat (Radio Button)': 'fuel_type_propane2',
+            
+            # Applicant type
+            'Property Owner (Radio Button)': 'owner2',
+            'Renter (Radio Button)': 'renter2',
+            
+            # Utility accounts
+            'Elec Acct Num2': 'elec_acct_num2',
+            'Gas Acct Num2': 'gas_acct_num2',
+            
+            # Owner info
+            'Landlord Name3': 'landlord_name3',
+            'Address3': 'address3',
+            
+            # Signatures
+            'Applicant Signature': 'signature3',
+            'Property Owner Signature': 'property_ower_sig3',
+            
+            # Qualification checkboxes (Option A)
+            'Elec Discount4 (Checkbox)': 'elec_discount4',
+            'Low Income Program (Checkbox)': 'low_income4',
+            'Matching Payment Eversource4 (Checkbox)': 'matching_payment_eversource4',
+            'Bill Forgiveness Program (Checkbox)': 'bill_forgive4',
+            'Matching Pay United4 (Checkbox)': 'matching_pay_united4',
+            
+            # Qualification checkboxes (Option B)
+            'EBT (Food Stamps) (Checkbox)': 'ebt4',
+            'Energy Award Letter4 (Checkbox)': 'energy_award_letter4',
+            'Section Eight4 (Checkbox)': 'section_eight4',
+            
+            # Qualification checkbox (Option D)
+            'Multifam4 (Checkbox)': 'multifam4',
+            
+            # Section 3 text fields
+            'People In Household4': 'household_size4',
+            'People In Household Overage4': 'adults_count4',
+            'Annual Income4': 'annual_income4'
+        }
     
     def extract_fields_with_pymupdf(self, pdf_path: str) -> Dict[str, Any]:
         """Enhanced PDF field extraction using PyMuPDF for better accuracy"""
@@ -570,12 +634,21 @@ class PDFProcessor:
             if 'pdf_fields' in document:
                 for field in document['pdf_fields']:
                     if field.get('value'):
-                        field_key = field.get('pdf_field_name', field['name'])
-                        field_mapping[field_key] = field['value']
+                        # Use field_type_map to get the actual PDF field name
+                        display_name = field['name']
+                        pdf_field_name = self.field_type_map.get(display_name, field.get('pdf_field_name', display_name))
+                        
+                        # If still no mapping found, try removing suffix
+                        if pdf_field_name == display_name and ' (' in display_name:
+                            # Remove suffix like " (Checkbox)" or " (Radio Button)"
+                            base_name = display_name.split(' (')[0]
+                            pdf_field_name = base_name.lower().replace(' ', '_')
+                        
+                        field_mapping[pdf_field_name] = field['value']
                         
                         # Track signature fields separately
                         if field.get('type') == 'signature':
-                            signature_fields[field_key] = {
+                            signature_fields[pdf_field_name] = {
                                 'value': field['value'],
                                 'position': field.get('position', {}),
                                 'page': field.get('page', 0),
