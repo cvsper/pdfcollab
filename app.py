@@ -1363,8 +1363,8 @@ def user1_interface():
                 # Section 2: Applicant Information
                 'first_name': 'First Name',
                 'last_name': 'Last Name',
-                'telephone': 'Phone Number',
-                'email': 'Email Address',
+                'telephone': 'phone2',  # Use specific phone field for applicant
+                'email': 'email2',      # Use specific email field for applicant
                 
                 # Section 3: Qualification
                 'household_size': 'People In Household4',
@@ -1372,20 +1372,24 @@ def user1_interface():
                 'annual_income': 'Annual Income4',
                 
                 # Section 4: Authorization (User 2)
-                'applicant_signature': 'Applicant Signature',
-                'authorization_date': 'Date',
+                'applicant_signature': 'signature3',           # Actual signature field name
+                'authorization_date': 'date3',                 # Use specific date field for applicant
                 
-                # Property Owner Info
+                # Property Owner Info  
                 'owner_name': 'Landlord Name3',
                 'owner_address': 'Address3', 
-                'owner_telephone': 'Phone Number',
-                'owner_email': 'Email Address',
-                'owner_signature': 'Property Owner Signature',
-                'owner_signature_date': 'Date',
+                'owner_telephone': 'phone3',                   # Use specific phone field for owner
+                'owner_email': 'email3',                       # Use specific email field for owner
+                'owner_signature': 'property_ower_sig3',       # Actual property owner signature field
+                'owner_signature_date': 'date_property_mang3', # Use specific date field for owner
                 
                 # Utility accounts
                 'electric_account': 'Elec Acct Num2',
-                'gas_account': 'Gas Acct Num2'
+                'gas_account': 'Gas Acct Num2',
+                
+                # Utility company names (commonly missing from mappings)
+                'electric_utility': 'Electric Utility2',
+                'gas_utility': 'Gas Utility2'
             }
             
             # User assignment rules
@@ -1441,17 +1445,50 @@ def user1_interface():
                         matched_fields += 1
                         break
             
+            # DEBUG: Show all form data received
+            print(f"\n🔍 DEBUG: Form data received ({len(form_data)} fields):")
+            for key, value in form_data.items():
+                print(f"   📝 {key}: {value}")
+            
+            # DEBUG: Show all PDF field names extracted
+            print(f"\n🔍 DEBUG: PDF field names extracted ({len(pdf_fields)} fields):")
+            for field in pdf_fields[:10]:  # Show first 10
+                print(f"   📄 {field['name']} (type: {field.get('type', 'unknown')})")
+            if len(pdf_fields) > 10:
+                print(f"   ... and {len(pdf_fields) - 10} more fields")
+            
+            # DEBUG: Show mapping dictionary keys
+            print(f"\n🔍 DEBUG: EXACT_FIELD_MAPPINGS keys ({len(EXACT_FIELD_MAPPINGS)} mappings):")
+            for key in list(EXACT_FIELD_MAPPINGS.keys())[:10]:
+                print(f"   🗝️  {key} → {EXACT_FIELD_MAPPINGS[key]}")
+            if len(EXACT_FIELD_MAPPINGS) > 10:
+                print(f"   ... and {len(EXACT_FIELD_MAPPINGS) - 10} more mappings")
+            
             # Map form data to PDF fields using exact matching (excluding Date fields which are handled above)
+            print(f"\n🔍 DEBUG: Starting field mapping process...")
+            mapping_attempts = 0
+            successful_mappings = 0
+            
             for form_field, form_value in form_data.items():
                 if not form_value:
+                    print(f"   ⭕ Skipping empty field: {form_field}")
                     continue
                 
                 # Skip Date fields as they're handled above with position-based logic
                 if form_field in ['authorization_date', 'owner_signature_date']:
+                    print(f"   ⏭️  Skipping date field: {form_field}")
                     continue
+                
+                mapping_attempts += 1
                     
                 # Get the exact PDF field name
                 pdf_field_name = EXACT_FIELD_MAPPINGS.get(form_field)
+                
+                if not pdf_field_name:
+                    print(f"   ❌ No mapping found for form field: {form_field}")
+                    continue
+                
+                print(f"   🔍 Mapping {form_field} → {pdf_field_name}")
                 
                 if pdf_field_name:
                     # Find the PDF field with exact name match
@@ -1480,9 +1517,27 @@ def user1_interface():
                     
                     if not field_found:
                         print(f"   ⚠️  PDF field not found for: {form_field} → {pdf_field_name}")
-                else:
-                    # Handle special cases (radio buttons, checkboxes with specific values)
-                    matched = False
+                    else:
+                        successful_mappings += 1
+                        
+            print(f"\n📊 DEBUG: Field mapping summary:")
+            print(f"   🔢 Total form fields with values: {mapping_attempts}")
+            print(f"   ✅ Successful mappings: {successful_mappings}")
+            print(f"   ❌ Failed mappings: {mapping_attempts - successful_mappings}")
+            
+            # Handle special cases (radio buttons, checkboxes with specific values)
+            print(f"\n🔍 DEBUG: Handling special cases...")
+            special_case_matches = 0
+            
+            for form_field, form_value in form_data.items():
+                if not form_value:
+                    continue
+                    
+                # Skip fields already handled
+                if EXACT_FIELD_MAPPINGS.get(form_field):
+                    continue
+                    
+                matched = False
                     
                     # Handle dwelling type
                     if form_field == 'dwelling_type':
@@ -1499,7 +1554,7 @@ def user1_interface():
                                     field['assigned_to'] = 'user1'
                                     field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
                                     matched = True
-                                    matched_fields += 1
+                                    special_case_matches += 1
                                     print(f"   ✅ Dwelling type: {form_value} → {target_field}")
                                     break
                     
@@ -1519,7 +1574,7 @@ def user1_interface():
                                     field['assigned_to'] = 'user1'
                                     field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
                                     matched = True
-                                    matched_fields += 1
+                                    special_case_matches += 1
                                     print(f"   ✅ Heating fuel: {form_value} → {target_field}")
                                     break
                     
@@ -1537,7 +1592,7 @@ def user1_interface():
                                     field['assigned_to'] = 'user1'
                                     field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
                                     matched = True
-                                    matched_fields += 1
+                                    special_case_matches += 1
                                     print(f"   ✅ Applicant type: {form_value} → {target_field}")
                                     break
                     
@@ -1549,7 +1604,17 @@ def user1_interface():
                 if field.get('assigned_to') is None:
                     field['assigned_to'] = 'user1'
             
-            print(f"📊 Field mapping summary: {matched_fields} fields matched with exact mappings")
+            total_mappings = successful_mappings + special_case_matches
+            print(f"📊 FINAL Field mapping summary:")
+            print(f"   ✅ Exact mappings: {successful_mappings}")
+            print(f"   🔧 Special case mappings: {special_case_matches}")
+            print(f"   📊 Total successful mappings: {total_mappings}")
+            print(f"   ❌ Total failed mappings: {mapping_attempts - successful_mappings}")
+            
+            if total_mappings == 0:
+                print(f"   🚨 CRITICAL: NO FIELDS WERE MAPPED! This will cause download issues.")
+                print(f"   💡 Check that form field names match EXACT_FIELD_MAPPINGS keys")
+                print(f"   💡 Check that PDF field names match EXACT_FIELD_MAPPINGS values")
             return pdf_fields
         
         # Apply the field mapping
