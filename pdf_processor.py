@@ -482,26 +482,10 @@ class PDFProcessor:
                 else:
                     print("⚠️  Section 5 fields could not be added")
             
-            # Step 5: Flatten PDF to make content permanent
-            print("🔧 Flattening PDF to make content permanent...")
-            
-            # Create new document to flatten
-            new_doc = fitz.open()
-            for page_num in range(len(doc)):
-                page = doc[page_num]
-                # Convert page to image and back to ensure flattening
-                mat = fitz.Matrix(2, 2)  # 2x scale for quality
-                pix = page.get_pixmap(matrix=mat)
-                
-                # Create new page from image
-                new_page = new_doc.new_page(width=page.rect.width, height=page.rect.height)
-                new_page.insert_image(new_page.rect, pixmap=pix)
-            
+            # Step 5: Save PDF directly (skip image conversion to preserve signature quality)
+            print("🔧 Saving PDF with signatures preserved...")
+            doc.save(output_path)
             doc.close()
-            
-            # Step 6: Save final PDF
-            new_doc.save(output_path)
-            new_doc.close()
             
             # Clean up temp file
             if os.path.exists(temp_output):
@@ -920,6 +904,85 @@ class PDFProcessor:
             
         except Exception as e:
             print(f"❌ Error adding Section 5 with exact positions: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def create_overlay_pdf(self, original_pdf: str, field_data: List[Dict[str, Any]], output_path: str) -> bool:
+        """Create a new PDF with text overlaid on the original"""
+        try:
+            print(f"🎨 Creating overlay PDF: {output_path}")
+            
+            doc = fitz.open(original_pdf)
+            
+            for field in field_data:
+                if not field.get('value'):
+                    continue
+                
+                page_num = field.get('page', 0)
+                if page_num >= len(doc):
+                    continue
+                
+                page = doc[page_num]
+                position = field.get('position', {})
+                
+                # Special handling for signature fields using the same fixed positioning
+                if field.get('type') == 'signature' and field.get('value'):
+                    signature_text = field['value']
+                    field_name = field.get('name', '')
+                    
+                    # Use the same exact coordinates as the main processor
+                    if field_name in ['Applicant Signature', 'signature3']:
+                        signature_x = 66
+                        signature_y = 152
+                        print(f"🎯 Overlay: Applicant Signature at ({signature_x}, {signature_y})")
+                    elif field_name in ['Property Owner Signature', 'property_ower_sig3']:
+                        signature_x = 430
+                        signature_y = -38
+                        print(f"🎯 Overlay: Property Owner Signature at ({signature_x}, {signature_y})")
+                    else:
+                        # Fallback positioning for other signature fields
+                        signature_x = position.get('x', 0)
+                        signature_y = position.get('y', 0) + 12
+                    
+                    # Insert signature with proper orientation
+                    try:
+                        page.insert_text(
+                            (signature_x, signature_y),
+                            signature_text,
+                            fontsize=10,
+                            color=(0, 0, 0.8),  # Dark blue for signatures
+                            morph=(fitz.Point(signature_x, signature_y), fitz.Matrix(1, 0, 0, -1, 0, 0))
+                        )
+                        print(f"✅ Added overlay signature '{signature_text}' at ({signature_x}, {signature_y})")
+                    except Exception as sig_error:
+                        # Fallback without matrix transformation
+                        page.insert_text(
+                            (signature_x, signature_y),
+                            signature_text,
+                            fontsize=10,
+                            color=(0, 0, 0.8)
+                        )
+                        print(f"✅ Added overlay signature '{signature_text}' (fallback) at ({signature_x}, {signature_y})")
+                else:
+                    # Regular text fields
+                    page.insert_text(
+                        (position.get('x', 0), position.get('y', 0) + 12),  # Adjust y for baseline
+                        field['value'],
+                        fontsize=10,
+                        color=(0, 0, 0),  # Black text
+                        fontname="helv"   # Helvetica font
+                    )
+                    print(f"✅ Added overlay text '{field['value']}' at page {page_num}")
+            
+            doc.save(output_path)
+            doc.close()
+            
+            print(f"✅ Successfully created overlay PDF")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error creating overlay PDF: {e}")
             import traceback
             traceback.print_exc()
             return False
