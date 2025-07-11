@@ -1348,9 +1348,47 @@ def user1_interface():
         
         # Map form data to PDF fields and assign User 1/User 2
         def map_form_data_to_pdf_fields(form_data, pdf_fields):
-            """Map the sectioned form data to PDF fields and assign to users"""
+            """Map the sectioned form data to PDF fields using exact field matching"""
             
-            # User 1 fills Sections 1-3, User 2 handles Section 4 (Authorization) + Section 5 (Zero Income Affidavit)
+            # Explicit field mappings to prevent misplacement
+            EXACT_FIELD_MAPPINGS = {
+                # Section 1: Property Information
+                'property_address': 'Property Address',
+                'apartment_number': 'Apartment Number', 
+                'city': 'City',
+                'state': 'State',
+                'zip_code': 'ZIP Code',
+                'apartments_count': 'Num Of Apt1',
+                
+                # Section 2: Applicant Information
+                'first_name': 'First Name',
+                'last_name': 'Last Name',
+                'telephone': 'Phone Number',
+                'email': 'Email Address',
+                
+                # Section 3: Qualification
+                'household_size': 'People In Household4',
+                'adults_count': 'People In Household Overage4', 
+                'annual_income': 'Annual Income4',
+                
+                # Section 4: Authorization (User 2)
+                'applicant_signature': 'Applicant Signature',
+                'authorization_date': 'Date',
+                
+                # Property Owner Info
+                'owner_name': 'Landlord Name3',
+                'owner_address': 'Address3', 
+                'owner_telephone': 'Phone Number',
+                'owner_email': 'Email Address',
+                'owner_signature': 'Property Owner Signature',
+                'owner_signature_date': 'Date',
+                
+                # Utility accounts
+                'electric_account': 'Elec Acct Num2',
+                'gas_account': 'Gas Acct Num2'
+            }
+            
+            # User assignment rules
             user1_fields = [
                 'property_address', 'apartment_number', 'city', 'state', 'zip_code',
                 'apartments_count', 'dwelling_type', 'first_name', 'last_name',
@@ -1360,52 +1398,120 @@ def user1_interface():
                 'owner_name', 'owner_address', 'owner_telephone', 'owner_email'
             ]
             
-            # User 2 handles Section 4 (Authorization) fields - ALWAYS required
             user2_section4_fields = [
                 'applicant_signature', 'authorization_date', 'owner_signature', 'owner_signature_date'
             ]
             
-            # User 2 handles Section 5 (Zero Income Affidavit) fields - conditional
             user2_section5_fields = [
                 'account_holder_name_affidavit', 'household_member_names_no_income', 'affidavit_signature', 
                 'printed_name_affidavit', 'date_affidavit', 'telephone_affidavit', 'affidavit_confirmation'
             ]
             
-            # Update PDF fields with form data and assignments
+            # Clear all existing assignments
             for field in pdf_fields:
-                field_name_lower = field['name'].lower()
+                field['assigned_to'] = None
+                field['value'] = ''
+            
+            # Map form data to PDF fields using exact matching
+            matched_fields = 0
+            for form_field, form_value in form_data.items():
+                if not form_value:
+                    continue
+                    
+                # Get the exact PDF field name
+                pdf_field_name = EXACT_FIELD_MAPPINGS.get(form_field)
                 
-                # Check if this field matches any of our form data
-                for form_key, form_value in form_data.items():
-                    if form_key in field_name_lower or any(word in field_name_lower for word in form_key.split('_')):
-                        field['value'] = str(form_value) if form_value else ''
-                        field['assigned_to'] = 'user1' if form_key in user1_fields else 'user2'
-                        break
-                
-                # Check if this is a Section 4 field (Authorization - goes to User 2)
-                is_section4_field = False
-                for section4_field in user2_section4_fields:
-                    if section4_field in field_name_lower or any(word in field_name_lower for word in section4_field.split('_')):
-                        field['assigned_to'] = 'user2'
-                        if 'signature' in section4_field:
-                            field['type'] = 'signature'
-                        is_section4_field = True
-                        break
-                
-                # Check if this is a Section 5 field (Zero Income Affidavit - goes to User 2)
-                is_section5_field = False
-                for section5_field in user2_section5_fields:
-                    if section5_field in field_name_lower or any(word in field_name_lower for word in section5_field.split('_')):
-                        field['assigned_to'] = 'user2'
-                        if 'signature' in section5_field:
-                            field['type'] = 'signature'
-                        is_section5_field = True
-                        break
-                
-                # All other fields go to User 1
-                if not is_section4_field and not is_section5_field and field.get('assigned_to') is None:
+                if pdf_field_name:
+                    # Find the PDF field with exact name match
+                    field_found = False
+                    for field in pdf_fields:
+                        if field['name'] == pdf_field_name:
+                            field['value'] = str(form_value)
+                            
+                            # Assign to correct user
+                            if form_field in user1_fields:
+                                field['assigned_to'] = 'user1'
+                            elif form_field in user2_section4_fields or form_field in user2_section5_fields:
+                                field['assigned_to'] = 'user2'
+                                if 'signature' in form_field:
+                                    field['type'] = 'signature'
+                            else:
+                                field['assigned_to'] = 'user1'  # Default to user1
+                            
+                            print(f"   ✅ Exact match: {form_field} → {pdf_field_name} (value: {form_value})")
+                            matched_fields += 1
+                            field_found = True
+                            break
+                    
+                    if not field_found:
+                        print(f"   ⚠️  PDF field not found for: {form_field} → {pdf_field_name}")
+                else:
+                    # Handle special cases (radio buttons, checkboxes with specific values)
+                    matched = False
+                    
+                    # Handle dwelling type
+                    if form_field == 'dwelling_type':
+                        dwelling_mappings = {
+                            'single_family': 'Single Family Home (Checkbox)',
+                            'apartment': 'Apartment (Checkbox)', 
+                            'condominium': 'Condominium (Checkbox)'
+                        }
+                        target_field = dwelling_mappings.get(form_value)
+                        if target_field:
+                            for field in pdf_fields:
+                                if field['name'] == target_field:
+                                    field['value'] = 'true'
+                                    field['assigned_to'] = 'user1'
+                                    matched = True
+                                    matched_fields += 1
+                                    print(f"   ✅ Dwelling type: {form_value} → {target_field}")
+                                    break
+                    
+                    # Handle heating fuel
+                    elif form_field == 'heating_fuel':
+                        fuel_mappings = {
+                            'electric': 'Electric Heat (Radio Button)',
+                            'natural_gas': 'Gas Heat (Radio Button)',
+                            'oil': 'Oil Heat (Radio Button)', 
+                            'propane': 'Propane Heat (Radio Button)'
+                        }
+                        target_field = fuel_mappings.get(form_value)
+                        if target_field:
+                            for field in pdf_fields:
+                                if field['name'] == target_field:
+                                    field['value'] = 'true'
+                                    field['assigned_to'] = 'user1'
+                                    matched = True
+                                    matched_fields += 1
+                                    print(f"   ✅ Heating fuel: {form_value} → {target_field}")
+                                    break
+                    
+                    # Handle applicant type
+                    elif form_field == 'applicant_type':
+                        type_mappings = {
+                            'property_owner': 'Property Owner (Radio Button)',
+                            'renter_tenant': 'Renter (Radio Button)'
+                        }
+                        target_field = type_mappings.get(form_value)
+                        if target_field:
+                            for field in pdf_fields:
+                                if field['name'] == target_field:
+                                    field['value'] = 'true'
+                                    field['assigned_to'] = 'user1'
+                                    matched = True
+                                    matched_fields += 1
+                                    print(f"   ✅ Applicant type: {form_value} → {target_field}")
+                                    break
+                    
+                    if not matched:
+                        print(f"   ❓ Unmatched form field: {form_field} = {form_value}")
+            
+            # Ensure all unassigned fields go to user1
+            for field in pdf_fields:
+                if field.get('assigned_to') is None:
                     field['assigned_to'] = 'user1'
             
+            print(f"📊 Field mapping summary: {matched_fields} fields matched with exact mappings")
             return pdf_fields
         
         # Apply the field mapping
