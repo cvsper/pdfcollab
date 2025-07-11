@@ -162,11 +162,11 @@
                                         <p class="text-sm font-medium text-blue-600 truncate">
                                             {% if document.status == 'Signed & Sent' %}
                                                 <a href="{{ url_for('completion_page', document_id=document.id) }}" class="hover:underline">
-                                                    {{ document.user1_data.name if document.user1_data and document.user1_data.name else 'User 2' }}
+                                                    {{ document.user2_data.name if document.user2_data and document.user2_data.name else (document.user1_data.user2_name if document.user1_data and document.user1_data.user2_name else 'User 2') }}
                                                 </a>
                                             {% else %}
                                                 <a href="{{ url_for('user2_interface', document_id=document.id) }}" class="hover:underline">
-                                                    {{ document.user1_data.name if document.user1_data and document.user1_data.name else 'User 2' }}
+                                                    {{ document.user2_data.name if document.user2_data and document.user2_data.name else (document.user1_data.user2_name if document.user1_data and document.user1_data.user2_name else 'User 2') }}
                                                 </a>
                                             {% endif %}
                                         </p>
