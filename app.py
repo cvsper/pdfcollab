@@ -1923,6 +1923,23 @@ def user2_interface(document_id):
         
         if 'pdf_fields' in document:
             print(f"📋 Found {len(document['pdf_fields'])} PDF fields in document")
+            
+            # FIRST: Fix signature fields that may be incorrectly assigned to user1
+            signature_fields_fixed = 0
+            for field in document['pdf_fields']:
+                field_name = field.get('name', '')
+                # Check if this is a signature field that should belong to user2
+                if (('Applicant Signature' in field_name or 'Property Owner Signature' in field_name or 
+                     field_name in ['signature3', 'property_ower_sig3']) and 
+                    field.get('assigned_to') == 'user1'):
+                    field['assigned_to'] = 'user2'
+                    field['type'] = 'signature'
+                    signature_fields_fixed += 1
+                    print(f"🔧 Fixed assignment: '{field_name}' reassigned from user1 to user2")
+            
+            if signature_fields_fixed > 0:
+                print(f"✅ Fixed {signature_fields_fixed} signature fields that were incorrectly assigned to user1")
+            
             user2_fields = [f for f in document['pdf_fields'] if f['assigned_to'] == 'user2']
             print(f"📝 User 2 is assigned {len(user2_fields)} fields:")
             
@@ -1942,19 +1959,26 @@ def user2_interface(document_id):
                         print(f"⭕ User 2 left field '{field['name']}' empty")
                         
                     # Special handling for signature fields - map to correct signature type
-                    if field.get('type') == 'signature':
+                    if field.get('type') == 'signature' or 'Signature' in field.get('name', ''):
                         field_name = field.get('name', '')
+                        field['type'] = 'signature'  # Ensure type is set
                         # CRITICAL: Ensure pdf_field_name is set for PDF processor to find the field
-                        field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                        if field_name == 'Applicant Signature' or 'Applicant' in field_name:
+                            field['pdf_field_name'] = 'signature3'
+                        elif field_name == 'Property Owner Signature' or 'Property Owner' in field_name:
+                            field['pdf_field_name'] = 'property_ower_sig3'
+                        else:
+                            field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                        
                         field['assigned_to'] = 'user2'
                         
                         # Map Applicant Signature field
-                        if 'Applicant' in field_name and user2_data.get('applicant_signature'):
+                        if ('Applicant' in field_name or field['pdf_field_name'] == 'signature3') and user2_data.get('applicant_signature'):
                             field['value'] = user2_data['applicant_signature']
                             print(f"🖋️  Applied Applicant signature to field '{field['name']}' (pdf_field: '{field['pdf_field_name']}'): '{user2_data['applicant_signature'][:20]}...'")
                         
                         # Map Property Owner Signature field  
-                        elif 'Property Owner' in field_name and user2_data.get('owner_signature'):
+                        elif ('Property Owner' in field_name or field['pdf_field_name'] == 'property_ower_sig3') and user2_data.get('owner_signature'):
                             field['value'] = user2_data['owner_signature']
                             print(f"🖋️  Applied Property Owner signature to field '{field['name']}' (pdf_field: '{field['pdf_field_name']}'): '{user2_data['owner_signature'][:20]}...'")
                         
