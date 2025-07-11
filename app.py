@@ -1876,10 +1876,25 @@ def user2_interface(document_id):
                     else:
                         print(f"⭕ User 2 left field '{field['name']}' empty")
                         
-                    # Special handling for signature fields - use the digital signature
-                    if field.get('type') == 'signature' and user2_data.get('applicant_signature'):
-                        field['value'] = user2_data['applicant_signature']
-                        print(f"🖋️  Applied digital signature to field '{field['name']}': '{user2_data['applicant_signature'][:20]}...'")
+                    # Special handling for signature fields - map to correct signature type
+                    if field.get('type') == 'signature':
+                        field_name = field.get('name', '')
+                        # CRITICAL: Ensure pdf_field_name is set for PDF processor to find the field
+                        field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                        field['assigned_to'] = 'user2'
+                        
+                        # Map Applicant Signature field
+                        if 'Applicant' in field_name and user2_data.get('applicant_signature'):
+                            field['value'] = user2_data['applicant_signature']
+                            print(f"🖋️  Applied Applicant signature to field '{field['name']}' (pdf_field: '{field['pdf_field_name']}'): '{user2_data['applicant_signature'][:20]}...'")
+                        
+                        # Map Property Owner Signature field  
+                        elif 'Property Owner' in field_name and user2_data.get('owner_signature'):
+                            field['value'] = user2_data['owner_signature']
+                            print(f"🖋️  Applied Property Owner signature to field '{field['name']}' (pdf_field: '{field['pdf_field_name']}'): '{user2_data['owner_signature'][:20]}...'")
+                        
+                        else:
+                            print(f"⚠️  Signature field '{field_name}' found but no matching signature data")
         else:
             print("❌ No pdf_fields found in document")
         
