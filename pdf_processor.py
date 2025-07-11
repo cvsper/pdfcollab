@@ -557,7 +557,7 @@ class PDFProcessor:
                 for widget in widgets:
                     field_name = widget.field_name
                     if field_name and field_name in field_mapping:
-                        # Handle signature fields with cursive font overlay
+                        # Handle signature fields with EXACT positioning and correct orientation
                         if field_name in signature_fields:
                             try:
                                 signature_text = signature_fields[field_name]['value']
@@ -565,57 +565,77 @@ class PDFProcessor:
                                 if signature_text.startswith('typed:'):
                                     signature_text = signature_text[6:].strip()
                                 
-                                # Clear the form field and add cursive text overlay
-                                widget.field_value = ""  # Clear form field
+                                # Clear the form field
+                                widget.field_value = ""
                                 widget.update()
                                 
-                                # Add cursive signature overlay
+                                # Use WIDGET-BASED positioning with proper text orientation
                                 rect = widget.rect
-                                signature_x = rect.x0 + 3
-                                signature_y = rect.y0 + rect.height - 3
-                                signature_font_size = max(10, min(rect.height - 2, 14))
+                                
+                                # Use exact coordinates - FIXED DIRECTIONS (down = decrease Y)
+                                if field_name in ['Applicant Signature', 'signature3']:
+                                    # Current (66, 157) - 5 down = (66, 152) 
+                                    signature_x = 66
+                                    signature_y = 152
+                                    print(f"🎯 Applicant Signature widget: ({rect.x0:.0f}, {rect.y0:.0f}) to ({rect.x1:.0f}, {rect.y1:.0f})")
+                                    print(f"🎯 Using FIXED coordinates (Applicant 5 down): ({signature_x:.0f}, {signature_y:.0f})")
+                                elif field_name in ['Property Owner Signature', 'property_ower_sig3']:
+                                    # Property Owner: 20 to the right = 410 + 20 = 430  
+                                    signature_x = 430
+                                    signature_y = -38
+                                    print(f"🎯 Property Owner Signature widget: ({rect.x0:.0f}, {rect.y0:.0f}) to ({rect.x1:.0f}, {rect.y1:.0f})")
+                                    print(f"🎯 Using FIXED coordinates (Property Owner 20 right): ({signature_x:.0f}, {signature_y:.0f})")
+                                else:
+                                    # Fallback positioning
+                                    signature_x = rect.x0 + 5
+                                    signature_y = rect.y0 + rect.height * 0.75
+                                    print(f"⚠️  Using fallback position for signature field: {field_name}")
+                
+                                
+                                signature_font_size = 10  # Smaller font to fit in widget
                                 
                                 try:
-                                    # Try Times Roman Italic (most commonly available cursive-like font)
-                                    page.insert_text(
+                                    # Fix text orientation - use proper transformation matrix
+                                    # Create transformation matrix for normal text orientation
+                                    # Matrix(a, b, c, d, e, f) where:
+                                    # a=1, d=1 for normal scaling
+                                    # b=0, c=0 for no rotation/skew
+                                    # e,f for translation
+                                    text_matrix = fitz.Matrix(1, 0, 0, 1, 0, 0)  # Identity matrix for normal orientation
+                                    
+                                    # Insert text with proper orientation
+                                    text_writer = fitz.TextWriter(page.rect)
+                                    text_writer.append(
                                         (signature_x, signature_y),
                                         signature_text,
                                         fontsize=signature_font_size,
-                                        color=(0, 0, 0.8),  # Dark blue for signatures
-                                        fontname="tiri"  # Times Roman Italic
+                                        fontname="helv"
                                     )
-                                    print(f"✅ Added cursive signature '{signature_text}' for '{field_name}' (Times Italic)")
-                                except Exception as font_error:
-                                    # Fallback to Helvetica Italic
+                                    text_writer.write_text(page, color=(0, 0, 0.8))
+                                    print(f"✅ Added signature '{signature_text}' for '{field_name}' using TextWriter at ({signature_x:.0f}, {signature_y:.0f})")
+                                except Exception as text_writer_error:
+                                    print(f"⚠️  TextWriter failed: {text_writer_error}, trying insert_text with matrix...")
                                     try:
+                                        # Alternative: Fix backwards text by only flipping Y axis (keep X normal)
+                                        # Matrix(a, b, c, d, e, f) - try just Y flip: a=1, d=-1 to fix upside down only
                                         page.insert_text(
                                             (signature_x, signature_y),
                                             signature_text,
                                             fontsize=signature_font_size,
                                             color=(0, 0, 0.8),
-                                            fontname="heli"  # Helvetica Italic
+                                            morph=(fitz.Point(signature_x, signature_y), fitz.Matrix(1, 0, 0, -1, 0, 0))
                                         )
-                                        print(f"✅ Added cursive signature '{signature_text}' for '{field_name}' (Helvetica Italic)")
-                                    except Exception as fallback_error:
-                                        # Try Courier Italic as final cursive attempt
-                                        try:
-                                            page.insert_text(
-                                                (signature_x, signature_y),
-                                                signature_text,
-                                                fontsize=signature_font_size,
-                                                color=(0, 0, 0.8),
-                                                fontname="coi"  # Courier Italic
-                                            )
-                                            print(f"✅ Added cursive signature '{signature_text}' for '{field_name}' (Courier Italic)")
-                                        except Exception as final_error:
-                                            # Final fallback to regular font
-                                            page.insert_text(
-                                                (signature_x, signature_y),
-                                                signature_text,
-                                                fontsize=signature_font_size,
-                                                color=(0, 0, 0.8)
-                                            )
-                                            print(f"✅ Added signature '{signature_text}' for '{field_name}' (regular font)")
+                                        print(f"✅ Added signature '{signature_text}' for '{field_name}' with FLIPPED matrix at ({signature_x:.0f}, {signature_y:.0f})")
+                                    except Exception as matrix_error:
+                                        print(f"⚠️  Matrix approach failed: {matrix_error}, using simple insert_text...")
+                                        # Final fallback
+                                        page.insert_text(
+                                            (signature_x, signature_y),
+                                            signature_text,
+                                            fontsize=signature_font_size,
+                                            color=(0, 0, 0.8)
+                                        )
+                                        print(f"✅ Added signature '{signature_text}' for '{field_name}' (simple fallback) at ({signature_x:.0f}, {signature_y:.0f})")
                                 
                                 filled_count += 1
                                 continue

@@ -1412,10 +1412,42 @@ def user1_interface():
                 field['assigned_to'] = None
                 field['value'] = ''
             
-            # Map form data to PDF fields using exact matching
+            # Initialize field matching counter
             matched_fields = 0
+            
+            # Handle special case: multiple Date fields - use position-based mapping
+            date_fields = [f for f in pdf_fields if f['name'] == 'Date']
+            date_fields.sort(key=lambda f: f['position']['y'])  # Sort by Y position
+            
+            # Map authorization_date to Date field near Applicant Signature (y ~471)
+            authorization_date_value = form_data.get('authorization_date')
+            if authorization_date_value:
+                for field in date_fields:
+                    if 460 <= field['position']['y'] <= 480:  # Authorization area
+                        field['value'] = str(authorization_date_value)
+                        field['assigned_to'] = 'user2'
+                        print(f"   ✅ Position-based match: authorization_date → Date field at ({field['position']['x']:.0f}, {field['position']['y']:.0f})")
+                        matched_fields += 1
+                        break
+            
+            # Map owner_signature_date to Date field near Property Owner Signature (y ~643)
+            owner_date_value = form_data.get('owner_signature_date')
+            if owner_date_value:
+                for field in date_fields:
+                    if field['position']['y'] > 630:  # Property owner area
+                        field['value'] = str(owner_date_value)
+                        field['assigned_to'] = 'user2'
+                        print(f"   ✅ Position-based match: owner_signature_date → Date field at ({field['position']['x']:.0f}, {field['position']['y']:.0f})")
+                        matched_fields += 1
+                        break
+            
+            # Map form data to PDF fields using exact matching (excluding Date fields which are handled above)
             for form_field, form_value in form_data.items():
                 if not form_value:
+                    continue
+                
+                # Skip Date fields as they're handled above with position-based logic
+                if form_field in ['authorization_date', 'owner_signature_date']:
                     continue
                     
                 # Get the exact PDF field name
@@ -1437,6 +1469,9 @@ def user1_interface():
                                     field['type'] = 'signature'
                             else:
                                 field['assigned_to'] = 'user1'  # Default to user1
+                            
+                            # CRITICAL: Set pdf_field_name for PDFProcessor to find the field
+                            field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
                             
                             print(f"   ✅ Exact match: {form_field} → {pdf_field_name} (value: {form_value})")
                             matched_fields += 1
@@ -1462,6 +1497,7 @@ def user1_interface():
                                 if field['name'] == target_field:
                                     field['value'] = 'true'
                                     field['assigned_to'] = 'user1'
+                                    field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
                                     matched = True
                                     matched_fields += 1
                                     print(f"   ✅ Dwelling type: {form_value} → {target_field}")
@@ -1481,6 +1517,7 @@ def user1_interface():
                                 if field['name'] == target_field:
                                     field['value'] = 'true'
                                     field['assigned_to'] = 'user1'
+                                    field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
                                     matched = True
                                     matched_fields += 1
                                     print(f"   ✅ Heating fuel: {form_value} → {target_field}")
@@ -1498,6 +1535,7 @@ def user1_interface():
                                 if field['name'] == target_field:
                                     field['value'] = 'true'
                                     field['assigned_to'] = 'user1'
+                                    field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
                                     matched = True
                                     matched_fields += 1
                                     print(f"   ✅ Applicant type: {form_value} → {target_field}")
