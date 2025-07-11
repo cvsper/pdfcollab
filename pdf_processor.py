@@ -460,6 +460,58 @@ class PDFProcessor:
         try:
             print(f"🎯 FORCE VISIBLE PDF FILLING: {pdf_path}")
             
+            # CRITICAL FIX: Ensure pdf_fields are extracted and mapped if not present
+            if 'pdf_fields' not in document or not document['pdf_fields']:
+                print("📋 PDF fields not found in document, extracting and mapping...")
+                
+                # Extract fields
+                field_extraction = self.extract_fields_with_pymupdf(pdf_path)
+                if 'error' in field_extraction:
+                    print(f"❌ Error extracting fields: {field_extraction['error']}")
+                    return False
+                
+                pdf_fields = field_extraction.get('fields', [])
+                
+                # Map User 1 data to basic fields  
+                user1_data = document.get('user1_data', {})
+                for field in pdf_fields:
+                    field['assigned_to'] = None
+                    field['value'] = ''
+                    field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                    
+                    # Map basic fields
+                    if field['name'] == 'Property Address' and user1_data.get('property_address'):
+                        field['value'] = user1_data['property_address']
+                        field['assigned_to'] = 'user1'
+                    elif field['name'] == 'First Name' and user1_data.get('first_name'):
+                        field['value'] = user1_data['first_name']
+                        field['assigned_to'] = 'user1'
+                    elif field['name'] == 'Last Name' and user1_data.get('last_name'):
+                        field['value'] = user1_data['last_name']
+                        field['assigned_to'] = 'user1'
+                
+                # Map User 2 signature data
+                user2_data = document.get('user2_data', {})
+                for field in pdf_fields:
+                    if field.get('type') == 'signature':
+                        field_name = field.get('name', '')
+                        field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
+                        field['assigned_to'] = 'user2'
+                        
+                        # Map Applicant Signature field
+                        if 'Applicant' in field_name and user2_data.get('applicant_signature'):
+                            field['value'] = user2_data['applicant_signature']
+                            print(f"🖋️  Mapped Applicant signature: '{field['name']}' -> '{field['value'][:20]}...'")
+                        
+                        # Map Property Owner Signature field  
+                        elif 'Property Owner' in field_name and user2_data.get('owner_signature'):
+                            field['value'] = user2_data['owner_signature']
+                            print(f"🖋️  Mapped Property Owner signature: '{field['name']}' -> '{field['value'][:20]}...'")
+                
+                # Store mapped fields in document
+                document['pdf_fields'] = pdf_fields
+                print(f"✅ Extracted and mapped {len(pdf_fields)} fields")
+            
             # Step 1: Fill PDF normally first
             temp_output = output_path.replace('.pdf', '_temp.pdf')
             success = self.fill_pdf_with_pymupdf(pdf_path, document, temp_output)
