@@ -1339,6 +1339,22 @@ def user1_interface():
             
             # Note: Section 5 (Zero Income Affidavit) fields will be completed by User 2
         }
+        
+        # 🐛 DEBUG: Check what qualification data was received
+        print("🐛 DEBUG: User 1 form data received:")
+        print(f"   qualification_option: '{user1_data.get('qualification_option', 'NOT SET')}'")
+        print(f"   utility_program: {user1_data.get('utility_program', 'NOT SET')}")
+        print(f"   documentation: {user1_data.get('documentation', 'NOT SET')}")
+        
+        # Check raw form data
+        form_keys = list(request.form.keys())
+        qualification_keys = [k for k in form_keys if 'qualification' in k or 'utility' in k or 'documentation' in k]
+        print(f"   Form keys related to qualification: {qualification_keys}")
+        
+        for key in qualification_keys:
+            list_values = request.form.getlist(key)
+            single_value = request.form.get(key)
+            print(f"      {key}: single='{single_value}', list={list_values}")
             
         # Extract PDF fields
         pdf_analysis = extract_pdf_fields(file_path)
@@ -1601,6 +1617,21 @@ def user1_interface():
             
             # Handle qualification option checkboxes (Options A, B, C, D)
             print(f"\n🔍 DEBUG: Handling qualification checkboxes...")
+            
+            # 🐛 DEBUG: Check qualification data before processing
+            print(f"\n🐛 DEBUG: About to process qualification options...")
+            print(f"   form_data keys: {list(form_data.keys())}")
+            print(f"   qualification_option value: '{form_data.get('qualification_option', 'MISSING')}'")
+            print(f"   utility_program value: {form_data.get('utility_program', 'MISSING')}")
+            print(f"   documentation value: {form_data.get('documentation', 'MISSING')}")
+            
+            # Check if the form fields are being processed at all
+            if 'qualification_option' not in form_data:
+                print("   ❌ qualification_option NOT found in form_data!")
+            if 'utility_program' not in form_data:
+                print("   ❌ utility_program NOT found in form_data!")
+            if 'documentation' not in form_data:
+                print("   ❌ documentation NOT found in form_data!")
             
             # Option A: Utility programs
             utility_programs = form_data.get('utility_program', [])
