@@ -564,11 +564,11 @@ class PDFProcessor:
                                     print(f"🎯 Applicant Signature widget: ({rect.x0:.0f}, {rect.y0:.0f}) to ({rect.x1:.0f}, {rect.y1:.0f})")
                                     print(f"🎯 Using FIXED coordinates (Applicant 5 down): ({signature_x:.0f}, {signature_y:.0f})")
                                 elif field_name in ['Property Owner Signature', 'property_ower_sig3']:
-                                    # Property Owner: 20 to the right = 410 + 20 = 430  
-                                    signature_x = 430
-                                    signature_y = -38
+                                    # Property Owner: Use widget center coordinates for visibility
+                                    signature_x = rect.x0 + 50  # 50 pixels right from widget start
+                                    signature_y = rect.y0 + 10   # 10 pixels down from widget start
                                     print(f"🎯 Property Owner Signature widget: ({rect.x0:.0f}, {rect.y0:.0f}) to ({rect.x1:.0f}, {rect.y1:.0f})")
-                                    print(f"🎯 Using FIXED coordinates (Property Owner 20 right): ({signature_x:.0f}, {signature_y:.0f})")
+                                    print(f"🎯 Using WIDGET-BASED coordinates (Property Owner): ({signature_x:.0f}, {signature_y:.0f})")
                                 else:
                                     # Fallback positioning
                                     signature_x = rect.x0 + 5
@@ -937,8 +937,9 @@ class PDFProcessor:
                         signature_y = 152
                         print(f"🎯 Overlay: Applicant Signature at ({signature_x}, {signature_y})")
                     elif field_name in ['Property Owner Signature', 'property_ower_sig3']:
-                        signature_x = 430
-                        signature_y = -38
+                        # Use visible coordinates within the page bounds
+                        signature_x = 369  # Widget start (319) + 50 pixels right
+                        signature_y = 622  # Widget start (612) + 10 pixels down
                         print(f"🎯 Overlay: Property Owner Signature at ({signature_x}, {signature_y})")
                     else:
                         # Fallback positioning for other signature fields
