@@ -1093,22 +1093,22 @@ class PDFProcessor:
                 # Define checkbox positions based on actual PDF widget locations
                 # Adjusted Y positions to be higher - PDF coordinates (0,0) = bottom-left
                 qualification_positions = {
-                    # Option A positions (left column) - moved higher
-                    'elec_discount4': {'x': 40.0, 'y': 240.0, 'w': 8.0, 'h': 8.0},
-                    'matching_payment_eversource4': {'x': 40.0, 'y': 252.0, 'w': 8.0, 'h': 8.0},
+                    # Option A positions (left column) - moved another 5 points higher
+                    'elec_discount4': {'x': 55.0, 'y': 490.0, 'w': 8.0, 'h': 8.0},
+                    'matching_payment_eversource4': {'x': 55.0, 'y': 472.0, 'w': 8.0, 'h': 8.0},
                     
-                    # Option A positions (right column) - moved higher
-                    'low_income4': {'x': 156.0, 'y': 240.0, 'w': 8.0, 'h': 8.0},
-                    'bill_forgive4': {'x': 156.0, 'y': 251.0, 'w': 8.0, 'h': 8.0},
-                    'matching_pay_united4': {'x': 156.0, 'y': 263.0, 'w': 8.0, 'h': 8.0},
+                    # Option A positions (right column) - adjusted slightly right
+                    'low_income4': {'x': 208.0, 'y': 490.0, 'w': 8.0, 'h': 8.0},
+                    'bill_forgive4': {'x': 208.0, 'y': 477.0, 'w': 8.0, 'h': 8.0},
+                    'matching_pay_united4': {'x': 208.0, 'y': 458.0, 'w': 8.0, 'h': 8.0},
                     
-                    # Option B positions - moved higher
-                    'ebt4': {'x': 41.0, 'y': 313.0, 'w': 8.0, 'h': 8.0},
-                    'energy_award_letter4': {'x': 41.0, 'y': 325.0, 'w': 8.0, 'h': 8.0},
-                    'section_eight4': {'x': 41.0, 'y': 337.0, 'w': 8.0, 'h': 8.0},
+                    # Option B positions - moved 15 points higher and to the right
+                    'ebt4': {'x': 56.0, 'y': 393.0, 'w': 8.0, 'h': 8.0},
+                    'energy_award_letter4': {'x': 56.0, 'y': 378.0, 'w': 8.0, 'h': 8.0},
+                    'section_eight4': {'x': 56.0, 'y': 362.0, 'w': 8.0, 'h': 8.0},
                     
-                    # Option D position - moved higher
-                    'multifam4': {'x': 317.0, 'y': 357.0, 'w': 8.0, 'h': 8.0}
+                    # Option D position - moved 1 to the right
+                    'multifam4': {'x': 423.0, 'y': 334.0, 'w': 8.0, 'h': 8.0}
                 }
                 
                 # Map frontend programs to PDF field names
