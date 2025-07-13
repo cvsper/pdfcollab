@@ -1391,18 +1391,13 @@ def user1_interface():
                 'email': 'email2',      # Use specific email field for applicant
                 'phone_additional': 'phone_num1',  # Additional phone field in Section 1
                 
-                # Section 2: Dwelling Type Selection
-                'dwelling_type': 'dwelling_single_fam1',  # Will be handled by special logic
-                
-                # Section 2: Heating Fuel Selection  
-                'heating_fuel': 'fuel_type_elec2',  # Will be handled by special logic
-                
-                # Section 2: Applicant Type
-                'applicant_type': 'owner2',  # Will be handled by special logic
-                
-                # Section 2: Utility Information
-                'electric_utility': 'electric_eversource2',  # Will be handled by special logic
-                'gas_utility': 'gas_util_cng2',  # Will be handled by special logic
+                # Section 2: Special case fields - removed from direct mapping
+                # These fields are handled by special logic below:
+                # - dwelling_type: mapped to specific checkbox based on value
+                # - heating_fuel: mapped to specific radio button based on value  
+                # - applicant_type: mapped to specific radio button based on value
+                # - electric_utility: mapped to specific radio button based on value
+                # - gas_utility: mapped to specific radio button based on value
                 'electric_account': 'elec_acct_num2',
                 'gas_account': 'gas_acct_num2',
                 'electric_account_holder': 'elect_acct_applicant2',  # Will be handled by special logic
@@ -1546,7 +1541,8 @@ def user1_interface():
                     # Find the PDF field with exact name match
                     field_found = False
                     for field in pdf_fields:
-                        if field['name'] == pdf_field_name:
+                        # Check both pdf_field_name and name for compatibility
+                        if field.get('pdf_field_name') == pdf_field_name or field['name'] == pdf_field_name:
                             field['value'] = str(form_value)
                             
                             # Assign to correct user
