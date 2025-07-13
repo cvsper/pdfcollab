@@ -1313,12 +1313,17 @@ def user1_interface():
             'last_name': request.form.get('last_name', ''),
             'telephone': request.form.get('telephone', ''),
             'email': request.form.get('email', ''),
+            'phone_additional': request.form.get('phone_additional', ''),  # Additional phone field
             'heating_fuel': request.form.get('heating_fuel', ''),
             'applicant_type': request.form.get('applicant_type', ''),
             'electric_utility': request.form.get('electric_utility', ''),
             'gas_utility': request.form.get('gas_utility', ''),
             'electric_account': request.form.get('electric_account', ''),
             'gas_account': request.form.get('gas_account', ''),
+            'electric_account_holder': request.form.get('electric_account_holder', ''),
+            'gas_account_holder': request.form.get('gas_account_holder', ''),
+            'electric_other_name': request.form.get('electric_other_name', ''),
+            'gas_other_name': request.form.get('gas_other_name', ''),
             
             # Section 3: Qualification Information
             'qualification_option': request.form.get('qualification_option', ''),
@@ -1334,6 +1339,9 @@ def user1_interface():
             'requires_section5': request.form.get('requires_section5', ''),  # Whether User 2 needs Section 5
             'owner_name': request.form.get('owner_name', ''),
             'owner_address': request.form.get('owner_address', ''),
+            'owner_city': request.form.get('owner_city', ''),
+            'owner_state': request.form.get('owner_state', ''),
+            'owner_zip': request.form.get('owner_zip', ''),
             'owner_telephone': request.form.get('owner_telephone', ''),
             'owner_email': request.form.get('owner_email', '')
             
@@ -1369,53 +1377,81 @@ def user1_interface():
             # Explicit field mappings to prevent misplacement
             EXACT_FIELD_MAPPINGS = {
                 # Section 1: Property Information
-                'property_address': 'Property Address',
-                'apartment_number': 'Apartment Number', 
-                'city': 'City',
-                'state': 'State',
-                'zip_code': 'ZIP Code',
-                'apartments_count': 'Num Of Apt1',
+                'property_address': 'property_address1',
+                'apartment_number': 'apt_num1', 
+                'city': 'city1',
+                'state': 'state1',
+                'zip_code': 'zip1',
+                'apartments_count': 'num_of_apt1',
                 
                 # Section 2: Applicant Information
-                'first_name': 'First Name',
-                'last_name': 'Last Name',
+                'first_name': 'first_name2',
+                'last_name': 'last_name2',
                 'telephone': 'phone2',  # Use specific phone field for applicant
                 'email': 'email2',      # Use specific email field for applicant
+                'phone_additional': 'phone_num1',  # Additional phone field in Section 1
+                
+                # Section 2: Dwelling Type Selection
+                'dwelling_type': 'dwelling_single_fam1',  # Will be handled by special logic
+                
+                # Section 2: Heating Fuel Selection  
+                'heating_fuel': 'fuel_type_elec2',  # Will be handled by special logic
+                
+                # Section 2: Applicant Type
+                'applicant_type': 'owner2',  # Will be handled by special logic
+                
+                # Section 2: Utility Information
+                'electric_utility': 'electric_eversource2',  # Will be handled by special logic
+                'gas_utility': 'gas_util_cng2',  # Will be handled by special logic
+                'electric_account': 'elec_acct_num2',
+                'gas_account': 'gas_acct_num2',
+                'electric_account_holder': 'elect_acct_applicant2',  # Will be handled by special logic
+                'gas_account_holder': 'gas_acct_applicant2',  # Will be handled by special logic
+                'electric_other_name': 'elect_acct_other_name2',
+                'gas_other_name': 'gas_acct_other_name2',
                 
                 # Section 3: Qualification
-                'household_size': 'People In Household4',
-                'adults_count': 'People In Household Overage4', 
-                'annual_income': 'Annual Income4',
+                'household_size': 'people_in_household4',
+                'adults_count': 'people_in_household_overage4', 
+                'annual_income': 'annual_income4',
                 
                 # Section 4: Authorization (User 2)
                 'applicant_signature': 'signature3',           # Actual signature field name
                 'authorization_date': 'date3',                 # Use specific date field for applicant
                 
                 # Property Owner Info  
-                'owner_name': 'Landlord Name3',
-                'owner_address': 'Address3', 
+                'owner_name': 'landlord_name3',
+                'owner_address': 'address3', 
+                'owner_city': 'city3',
+                'owner_state': 'text_55cits',  # Landlord state field
+                'owner_zip': 'text_56qpfj',    # Landlord ZIP field
                 'owner_telephone': 'phone3',                   # Use specific phone field for owner
                 'owner_email': 'email3',                       # Use specific email field for owner
                 'owner_signature': 'property_ower_sig3',       # Actual property owner signature field
-                'owner_signature_date': 'date_property_mang3', # Use specific date field for owner
-                
-                # Utility accounts
-                'electric_account': 'Elec Acct Num2',
-                'gas_account': 'Gas Acct Num2',
-                
-                # Utility company names (commonly missing from mappings)
-                'electric_utility': 'Electric Utility2',
-                'gas_utility': 'Gas Utility2'
+                'owner_signature_date': 'date_property_mang3' # Use specific date field for owner
             }
             
-            # User assignment rules
+            # User assignment rules - All fields that User 1 fills out
             user1_fields = [
-                'property_address', 'apartment_number', 'city', 'state', 'zip_code',
-                'apartments_count', 'dwelling_type', 'first_name', 'last_name',
-                'telephone', 'email', 'heating_fuel', 'applicant_type',
+                # Section 1: Property Information
+                'property_address', 'apartment_number', 'city', 'state', 'zip_code', 'apartments_count',
+                
+                # Section 2: Personal Information
+                'first_name', 'last_name', 'telephone', 'email', 'phone_additional',
+                
+                # Section 2: Dwelling and Fuel Types
+                'dwelling_type', 'heating_fuel', 'applicant_type',
+                
+                # Section 2: Utility Information
                 'electric_utility', 'gas_utility', 'electric_account', 'gas_account',
+                'electric_account_holder', 'gas_account_holder', 'electric_other_name', 'gas_other_name',
+                
+                # Section 3: Qualification Information
                 'qualification_option', 'household_size', 'adults_count', 'annual_income',
-                'owner_name', 'owner_address', 'owner_telephone', 'owner_email'
+                
+                # Property Owner Information (filled by User 1 for landlords)
+                'owner_name', 'owner_address', 'owner_city', 'owner_state', 'owner_zip',
+                'owner_telephone', 'owner_email'
             ]
             
             user2_section4_fields = [

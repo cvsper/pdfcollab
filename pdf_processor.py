@@ -18,69 +18,101 @@ class PDFProcessor:
         
         # Map from display names (with suffixes) to actual PDF field names
         self.field_type_map = {
-            # Property fields
+            # Section 1: Property Information fields
             'Property Address': 'property_address1',
-            'Apartment Number': 'apartment_num1',
+            'Apartment Number': 'apt_num1',
             'City': 'city1',
             'State': 'state1',
             'ZIP Code': 'zip1',
-            'Num Of Apt1': 'num_of_apt1',
+            'Number of Apartments': 'num_of_apt1',
             
-            # Personal info
+            # Section 2: Personal info  
             'First Name': 'first_name2',
             'Last Name': 'last_name2',
             'Phone Number': 'phone2',
             'Email Address': 'email2',
+            'Phone Number (Additional)': 'phone_num1',  # Additional phone field in Section 1
+            'Telephone': 'phone_num1',  # Alternative name for additional phone field
             
-            # Dwelling type checkboxes
+            # Section 2: Dwelling type checkboxes
             'Single Family Home (Checkbox)': 'dwelling_single_fam1',
-            'Apartment (Checkbox)': 'dwelling_apartment1', 
+            'Apartment (Checkbox)': 'dwelling_apt1', 
             'Condominium (Checkbox)': 'dwelling_condo1',
             
-            # Heating fuel radio buttons
+            # Section 2: Heating fuel radio buttons
             'Electric Heat (Radio Button)': 'fuel_type_elec2',
             'Gas Heat (Radio Button)': 'fuel_type_gas2',
             'Oil Heat (Radio Button)': 'fuel_type_oil2',
             'Propane Heat (Radio Button)': 'fuel_type_propane2',
             
-            # Applicant type
+            # Section 2: Applicant type
             'Property Owner (Radio Button)': 'owner2',
             'Renter (Radio Button)': 'renter2',
             
-            # Utility accounts
-            'Elec Acct Num2': 'elec_acct_num2',
-            'Gas Acct Num2': 'gas_acct_num2',
+            # Section 2: Electric utility options
+            'Electric Eversource (Radio Button)': 'electric_eversource2',
+            'Electric UI (Radio Button)': 'electric_ui2',
             
-            # Owner info
-            'Landlord Name3': 'landlord_name3',
-            'Address3': 'address3',
+            # Section 2: Gas utility options  
+            'Gas Util CNG (Radio Button)': 'gas_util_cng2',
+            'Gas Util Eversource (Radio Button)': 'gas_util_eversource2',
+            'Gas Util SCG (Radio Button)': 'gas_util_scg2',
             
-            # Signatures
+            # Section 2: Account holder options
+            'Electric Account Applicant (Radio Button)': 'elect_acct_applicant2',
+            'Electric Account Other (Radio Button)': 'elect_acct_other2',
+            'Gas Account Applicant (Radio Button)': 'gas_acct_applicant2',
+            'Gas Account Other (Radio Button)': 'gas_acct_other2',
+            'Electric Account Other Account (Radio Button)': 'elect_acct_other_acct2',
+            
+            # Section 2: Account names and numbers
+            'Electric Account Other Name': 'elect_acct_other_name2',
+            'Gas Account Other Name': 'gas_acct_other_name2',
+            'Electric Account Number': 'elec_acct_num2',
+            'Gas Account Number': 'gas_acct_num2',
+            
+            # Section 4: Owner/Landlord info
+            'Landlord Name': 'landlord_name3',
+            'Landlord Address': 'address3',
+            'Landlord City': 'city3',
+            'Landlord State': 'text_55cits',  # State field for landlord
+            'Landlord ZIP': 'text_56qpfj',    # ZIP field for landlord
+            'Landlord Phone': 'phone3',
+            'Landlord Email': 'email3',
+            
+            # Section 4: Signatures
             'Applicant Signature': 'signature3',
             'Property Owner Signature': 'property_ower_sig3',
             
             # Date fields - map to specific widget names based on Y position
             'Date': 'date',  # Generic mapping for Date fields
             
-            # Qualification checkboxes (Option A)
+            # Section 3: Qualification checkboxes (Option A)
             'Elec Discount4 (Checkbox)': 'elec_discount4',
             'Low Income Program (Checkbox)': 'low_income4',
             'Matching Payment Eversource4 (Checkbox)': 'matching_payment_eversource4',
             'Bill Forgiveness Program (Checkbox)': 'bill_forgive4',
             'Matching Pay United4 (Checkbox)': 'matching_pay_united4',
             
-            # Qualification checkboxes (Option B)
+            # Section 3: Qualification checkboxes (Option B)
             'EBT (Food Stamps) (Checkbox)': 'ebt4',
             'Energy Award Letter4 (Checkbox)': 'energy_award_letter4',
             'Section Eight4 (Checkbox)': 'section_eight4',
             
-            # Qualification checkbox (Option D)
+            # Section 3: Qualification checkbox (Option D)
             'Multifam4 (Checkbox)': 'multifam4',
             
-            # Section 3 text fields
+            # Section 3: Income information text fields
             'People In Household4': 'people_in_household4',
-            'People In Household Overage4': 'adults_count4',
-            'Annual Income4': 'annual_income4'
+            'People In Household Overage4': 'people_in_household_overage4',
+            'Annual Income4': 'annual_income4',
+            
+            # Additional field mappings for missing fields identified by test  
+            # These are for disambiguating fields with duplicate display names
+            'Phone Number (Additional)': 'phone_num1',    # Additional phone field at position (37,210)
+            'City (Landlord)': 'city3',                   # Landlord city field at position (35,601)  
+            'Phone Number (Landlord)': 'phone3',          # Landlord phone field at position (36,629)
+            'Email Address (Landlord)': 'email3'          # Landlord email field at position (36,655)
         }
     
     def extract_fields_with_pymupdf(self, pdf_path: str) -> Dict[str, Any]:
@@ -651,6 +683,28 @@ class PDFProcessor:
                                 pdf_field_name = 'date_property_mang3'  # Date field near Property Owner Signature
                                 print(f"🎯 Mapped Date field at y={field_position_y} to widget 'date_property_mang3'")
                         
+                        # Special handling for duplicate field names - use position to disambiguate  
+                        elif display_name == 'Phone Number' and field.get('position', {}).get('y'):
+                            field_position_y = field['position']['y']
+                            if 200 <= field_position_y <= 220:
+                                pdf_field_name = 'phone_num1'  # Additional phone field at y=210
+                                print(f"🎯 Mapped Phone Number field at y={field_position_y} to widget 'phone_num1'")
+                            elif field_position_y > 620:
+                                pdf_field_name = 'phone3'  # Landlord phone field at y=629
+                                print(f"🎯 Mapped Phone Number field at y={field_position_y} to widget 'phone3'")
+                        
+                        elif display_name == 'City' and field.get('position', {}).get('y'):
+                            field_position_y = field['position']['y']
+                            if field_position_y > 590:
+                                pdf_field_name = 'city3'  # Landlord city field at y=601
+                                print(f"🎯 Mapped City field at y={field_position_y} to widget 'city3'")
+                        
+                        elif display_name == 'Email Address' and field.get('position', {}).get('y'):
+                            field_position_y = field['position']['y']
+                            if field_position_y > 640:
+                                pdf_field_name = 'email3'  # Landlord email field at y=655
+                                print(f"🎯 Mapped Email Address field at y={field_position_y} to widget 'email3'")
+                        
                         # If still no mapping found, try removing suffix
                         if pdf_field_name == display_name and ' (' in display_name:
                             # Remove suffix like " (Checkbox)" or " (Radio Button)"
@@ -762,14 +816,14 @@ class PDFProcessor:
             text_x = x + 3  # Small left margin inside field
             text_y = y + height - 3  # 3 points from bottom of field
             
-            # Simple signature text insertion with italic font
+            # Simple signature text insertion with cursive font
             try:
                 page.insert_text(
                     (text_x, text_y),
                     signature_text,
                     fontsize=max(10, min(height - 2, 16)),
                     color=(0, 0, 0.7),  # Dark blue color
-                    fontname="helv-oblique"  # Simple italic font
+                    fontname="times-italic"  # Cursive-style italic font
                 )
                 print(f"✍️  Inserted signature text '{signature_text}' for '{field_name}'")
             except:
@@ -947,22 +1001,27 @@ class PDFProcessor:
                 if field_value:
                     x, y, width, height = pos["x"], pos["y"], pos["width"], pos["height"]
                     
-                    # Determine font size based on field type
+                    # Determine font size and style based on field type
                     if field_name == "household_member_names_no_income":
                         fontsize = 9  # Smaller for multi-line text
+                        fontname = "helv"
+                    elif field_name == "affidavit_signature":
+                        fontsize = 11
+                        fontname = "times-italic"  # Cursive font for signature
                     else:
                         fontsize = 11
+                        fontname = "helv"
                     
                     # Use the same method as the working app.py version
                     rect = fitz.Rect(x, y, x + width, y + height)
                     
-                    # Add freetext annotation like in app.py
+                    # Add freetext annotation with appropriate font
                     text_annot = page.add_freetext_annot(
                         rect,
                         field_value,
                         fontsize=fontsize,
-                        fontname="helv",
-                        text_color=(0, 0, 0),
+                        fontname=fontname,
+                        text_color=(0, 0, 0.7) if field_name == "affidavit_signature" else (0, 0, 0),  # Blue for signatures
                         fill_color=(1, 1, 1),  # White background
                         border_color=(0, 0, 0)
                     )
@@ -1018,13 +1077,14 @@ class PDFProcessor:
                         signature_x = position.get('x', 0)
                         signature_y = position.get('y', 0) + 12
                     
-                    # Insert signature with proper orientation
+                    # Insert signature with proper orientation and cursive font
                     try:
                         page.insert_text(
                             (signature_x, signature_y),
                             signature_text,
                             fontsize=10,
                             color=(0, 0, 0.8),  # Dark blue for signatures
+                            fontname="times-italic",  # Cursive-style font
                             morph=(fitz.Point(signature_x, signature_y), fitz.Matrix(1, 0, 0, -1, 0, 0))
                         )
                         print(f"✅ Added overlay signature '{signature_text}' at ({signature_x}, {signature_y})")
@@ -1034,7 +1094,8 @@ class PDFProcessor:
                             (signature_x, signature_y),
                             signature_text,
                             fontsize=10,
-                            color=(0, 0, 0.8)
+                            color=(0, 0, 0.8),
+                            fontname="times-italic"  # Cursive-style font
                         )
                         print(f"✅ Added overlay signature '{signature_text}' (fallback) at ({signature_x}, {signature_y})")
                 else:
