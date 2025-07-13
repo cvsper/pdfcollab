@@ -725,6 +725,9 @@ class PDFProcessor:
             # Step 5: Add visual dwelling indicators if dwelling type is selected
             self.add_dwelling_visual_indicators(doc, document)
             
+            # Step 6: Add visual indicators for Options A, B, D
+            self.add_qualification_visual_indicators(doc, document)
+            
             # Step 6: Save PDF directly (skip image conversion to preserve signature quality)
             print("🔧 Saving PDF with signatures preserved...")
             doc.save(output_path)
@@ -1026,6 +1029,150 @@ class PDFProcessor:
                 
         except Exception as e:
             print(f"❌ Error adding dwelling visual indicators: {e}")
+    
+    def add_qualification_visual_indicators(self, doc, document: Dict[str, Any]):
+        """Add visual indicators for Options A, B, D qualification checkboxes"""
+        try:
+            user1_data = document.get('user1_data', {})
+            
+            # Check which options are selected
+            selected_options = []
+            
+            # Option A programs
+            option_a_programs = []
+            utility_programs = user1_data.get('utility_program', [])
+            if utility_programs:
+                option_a_programs.extend(utility_programs)
+            
+            # Also check direct field values
+            if user1_data.get('elec_discount4') == 'Yes':
+                option_a_programs.append('electric_discount')
+            if user1_data.get('low_income4') == 'Yes':
+                option_a_programs.append('low_income_discount')
+            if user1_data.get('matching_payment_eversource4') == 'Yes':
+                option_a_programs.append('matching_payment')
+            if user1_data.get('bill_forgive4') == 'Yes':
+                option_a_programs.append('bill_forgiveness')
+            if user1_data.get('matching_pay_united4') == 'Yes':
+                option_a_programs.append('matching_payment_united')
+            
+            # Option B documentation
+            option_b_docs = []
+            documentation = user1_data.get('documentation', [])
+            if documentation:
+                option_b_docs.extend(documentation)
+            
+            # Also check direct field values
+            if user1_data.get('ebt4') == 'Yes':
+                option_b_docs.append('ebt_award')
+            if user1_data.get('energy_award_letter4') == 'Yes':
+                option_b_docs.append('energy_assistance')
+            if user1_data.get('section_eight4') == 'Yes':
+                option_b_docs.append('section_8')
+            
+            # Option D multifamily
+            option_d_selected = (user1_data.get('qualification_option') == 'option_d' or 
+                               user1_data.get('multifam4') == 'Yes')
+            
+            # Only add indicators if there are selections
+            if not (option_a_programs or option_b_docs or option_d_selected):
+                return
+            
+            print(f"📋 Adding visual indicators for qualification options:")
+            if option_a_programs:
+                print(f"   Option A: {option_a_programs}")
+            if option_b_docs:
+                print(f"   Option B: {option_b_docs}")
+            if option_d_selected:
+                print(f"   Option D: multifamily")
+            
+            # Get page 4 where qualification checkboxes are located
+            if len(doc) >= 4:
+                page = doc[3]  # Page 4 (0-indexed)
+                
+                # Define checkbox positions based on actual PDF widget locations
+                # These are the Y positions from the debug output
+                qualification_positions = {
+                    # Option A positions (left column)
+                    'elec_discount4': {'x': 40.0, 'y': 220.0, 'w': 8.0, 'h': 8.0},
+                    'matching_payment_eversource4': {'x': 40.0, 'y': 232.0, 'w': 8.0, 'h': 8.0},
+                    
+                    # Option A positions (right column)  
+                    'low_income4': {'x': 156.0, 'y': 220.0, 'w': 8.0, 'h': 8.0},
+                    'bill_forgive4': {'x': 156.0, 'y': 231.0, 'w': 8.0, 'h': 8.0},
+                    'matching_pay_united4': {'x': 156.0, 'y': 243.0, 'w': 8.0, 'h': 8.0},
+                    
+                    # Option B positions
+                    'ebt4': {'x': 41.0, 'y': 293.0, 'w': 8.0, 'h': 8.0},
+                    'energy_award_letter4': {'x': 41.0, 'y': 305.0, 'w': 8.0, 'h': 8.0},
+                    'section_eight4': {'x': 41.0, 'y': 317.0, 'w': 8.0, 'h': 8.0},
+                    
+                    # Option D position
+                    'multifam4': {'x': 317.0, 'y': 337.0, 'w': 8.0, 'h': 8.0}
+                }
+                
+                # Map frontend programs to PDF field names
+                program_to_field = {
+                    'electric_discount': 'elec_discount4',
+                    'low_income_discount': 'low_income4',
+                    'matching_payment': 'matching_payment_eversource4',
+                    'bill_forgiveness': 'bill_forgive4',
+                    'matching_payment_united': 'matching_pay_united4',
+                    'ebt_award': 'ebt4',
+                    'energy_assistance': 'energy_award_letter4',
+                    'section_8': 'section_eight4'
+                }
+                
+                # Add visual indicators for selected Option A programs
+                for program in option_a_programs:
+                    field_name = program_to_field.get(program)
+                    if field_name and field_name in qualification_positions:
+                        pos = qualification_positions[field_name]
+                        self.draw_checkbox_indicator(page, pos, f"Option A: {program}")
+                
+                # Add visual indicators for selected Option B docs
+                for doc in option_b_docs:
+                    field_name = program_to_field.get(doc)
+                    if field_name and field_name in qualification_positions:
+                        pos = qualification_positions[field_name]
+                        self.draw_checkbox_indicator(page, pos, f"Option B: {doc}")
+                
+                # Add visual indicator for Option D
+                if option_d_selected:
+                    pos = qualification_positions['multifam4']
+                    self.draw_checkbox_indicator(page, pos, "Option D: multifamily")
+                        
+        except Exception as e:
+            print(f"⚠️  Error adding qualification visual indicators: {e}")
+    
+    def draw_checkbox_indicator(self, page, position: dict, label: str):
+        """Draw a checkbox with checkmark indicator"""
+        try:
+            x, y, w, h = position['x'], position['y'], position['w'], position['h']
+            
+            # Draw checkbox outline
+            checkbox_rect = fitz.Rect(x, y, x + w, y + h)
+            page.draw_rect(checkbox_rect, color=(0, 0, 0), width=1)
+            
+            # Add checkmark symbol inside the checkbox
+            check_size = min(w, h) * 0.6
+            center_x = x + w/2
+            center_y = y + h/2
+            
+            # First line of checkmark (bottom left to middle)
+            p1 = fitz.Point(center_x - check_size/2, center_y)
+            p2 = fitz.Point(center_x - check_size/4, center_y - check_size/2)
+            page.draw_line(p1, p2, color=(0, 0, 0), width=1.5)
+            
+            # Second line of checkmark (middle to top right)
+            p3 = fitz.Point(center_x - check_size/4, center_y - check_size/2)
+            p4 = fitz.Point(center_x + check_size/2, center_y + check_size/2)
+            page.draw_line(p3, p4, color=(0, 0, 0), width=1.5)
+            
+            print(f"   ✅ Added checkbox indicator for {label} at ({x}, {y})")
+            
+        except Exception as e:
+            print(f"⚠️  Error drawing checkbox indicator for {label}: {e}")
     
     def convert_pdf_to_image(self, pdf_path: str, page_num: int = 0) -> str:
         """Convert PDF page to base64 image for preview"""
