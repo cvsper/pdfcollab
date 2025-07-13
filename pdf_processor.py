@@ -571,23 +571,30 @@ class PDFProcessor:
                 
                 pdf_fields = field_extraction.get('fields', [])
                 
-                # Map User 1 data to basic fields  
+                # Map User 1 data to all fields  
                 user1_data = document.get('user1_data', {})
                 for field in pdf_fields:
                     field['assigned_to'] = None
                     field['value'] = ''
                     field['pdf_field_name'] = field.get('pdf_field_name', field['name'])
                     
-                    # Map basic fields
-                    if field['name'] == 'Property Address' and user1_data.get('property_address'):
-                        field['value'] = user1_data['property_address']
+                    # Get the actual PDF field name
+                    pdf_field_name = field.get('pdf_field_name', field['name'])
+                    
+                    # Check if this field has a value in user1_data
+                    if pdf_field_name in user1_data and user1_data[pdf_field_name]:
+                        field['value'] = user1_data[pdf_field_name]
                         field['assigned_to'] = 'user1'
-                    elif field['name'] == 'First Name' and user1_data.get('first_name'):
-                        field['value'] = user1_data['first_name']
-                        field['assigned_to'] = 'user1'
-                    elif field['name'] == 'Last Name' and user1_data.get('last_name'):
-                        field['value'] = user1_data['last_name']
-                        field['assigned_to'] = 'user1'
+                        print(f"   ✅ Mapped {pdf_field_name} = {field['value']}")
+                    
+                    # Also check by display name mappings
+                    display_name = field['name']
+                    if display_name in self.field_type_map:
+                        mapped_field = self.field_type_map[display_name]
+                        if mapped_field in user1_data and user1_data[mapped_field]:
+                            field['value'] = user1_data[mapped_field]
+                            field['assigned_to'] = 'user1'
+                            print(f"   ✅ Mapped {display_name} → {mapped_field} = {field['value']}")
                 
                 # Map User 2 signature data
                 user2_data = document.get('user2_data', {})
@@ -633,7 +640,10 @@ class PDFProcessor:
                 else:
                     print("⚠️  Section 5 fields could not be added")
             
-            # Step 5: Save PDF directly (skip image conversion to preserve signature quality)
+            # Step 5: Add visual dwelling indicators if dwelling type is selected
+            self.add_dwelling_visual_indicators(doc, document)
+            
+            # Step 6: Save PDF directly (skip image conversion to preserve signature quality)
             print("🔧 Saving PDF with signatures preserved...")
             doc.save(output_path)
             doc.close()
@@ -838,6 +848,102 @@ class PDFProcessor:
                 
         except Exception as e:
             print(f"⚠️  Error inserting signature text: {e}")
+    
+    def add_dwelling_visual_indicators(self, doc, document: Dict[str, Any]):
+        """Add visual indicators for dwelling type selection to make it obvious"""
+        try:
+            # Check if dwelling type is specified
+            user1_data = document.get('user1_data', {})
+            dwelling_type = user1_data.get('dwelling_type')
+            
+            # If no dwelling_type field, check individual checkbox fields
+            if not dwelling_type:
+                if user1_data.get('dwelling_single_fam1') == 'Yes':
+                    dwelling_type = 'single_family'
+                elif user1_data.get('dwelling_apt1') == 'Yes':
+                    dwelling_type = 'apartment'
+                elif user1_data.get('dwelling_condo1') == 'Yes':
+                    dwelling_type = 'condominium'
+                else:
+                    return
+            
+            print(f"🏠 Adding visual indicators for dwelling type: {dwelling_type}")
+            
+            # Get page 3 where dwelling checkboxes are located
+            if len(doc) >= 3:
+                page = doc[2]  # Page 3 (0-indexed)
+                
+                # Define dwelling type positions - MUCH LOWER AND NARROWER
+                # PDF coordinates: (0,0) = BOTTOM-LEFT, so high Y values = top of page
+                # Original checkboxes are at y=256-280, page height is ~792
+                # User wants: much lower than y=650 and much narrower than w=80
+                dwelling_positions = {
+                    'single_family': {'x': 55.0, 'y': 440.0, 'w': 8.0, 'h': 8.0},   # Top position, moved tiny bit lower
+                    'apartment': {'x': 55.0, 'y': 425.0, 'w': 8.0, 'h': 8.0},      # Middle position, same
+                    'condominium': {'x': 55.0, 'y': 410.0, 'w': 8.0, 'h': 8.0}     # Bottom position, same
+                }
+                
+                dwelling_labels = {
+                    'single_family': 'Single Family Home',
+                    'apartment': 'Apartment',
+                    'condominium': 'Condominium'
+                }
+                
+                # Add visual indicators for each dwelling type
+                for dtype, pos in dwelling_positions.items():
+                    x, y, w, h = pos['x'], pos['y'], pos['w'], pos['h']
+                    label = dwelling_labels.get(dtype, dtype)
+                    
+                    if dtype == dwelling_type or dwelling_type == 'all':
+                        # Selected dwelling - add checkmark in checkbox
+                        try:
+                            # Draw checkbox outline
+                            checkbox_rect = fitz.Rect(x, y, x + w, y + h)
+                            page.draw_rect(checkbox_rect, color=(0, 0, 0), width=1)
+                            
+                            # Add checkmark symbol inside the checkbox
+                            try:
+                                # Draw a checkmark using lines
+                                # Checkmark is made of two lines forming a "✓"
+                                check_size = min(w, h) * 0.6
+                                center_x = x + w/2
+                                center_y = y + h/2
+                                
+                                # First line of checkmark (bottom left to middle)
+                                p1 = fitz.Point(center_x - check_size/2, center_y)
+                                p2 = fitz.Point(center_x - check_size/4, center_y - check_size/2)
+                                page.draw_line(p1, p2, color=(0, 0, 0), width=1.5)
+                                
+                                # Second line of checkmark (middle to top right)
+                                p3 = fitz.Point(center_x - check_size/4, center_y - check_size/2)
+                                p4 = fitz.Point(center_x + check_size/2, center_y + check_size/2)
+                                page.draw_line(p3, p4, color=(0, 0, 0), width=1.5)
+                                
+                            except:
+                                # Fallback: simple "X" mark
+                                page.insert_text(
+                                    (x + 1, y + h - 1),
+                                    "✓",
+                                    fontsize=6,
+                                    color=(0, 0, 0)
+                                )
+                            
+                            print(f"   ✅ Added checkbox with checkmark for {label} at y={y}")
+                            
+                        except Exception as e:
+                            print(f"   ❌ Error adding checkbox for {dtype}: {e}")
+                    else:
+                        # Unselected dwelling - add subtle indicator
+                        try:
+                            # Add gray circle to show it's unselected
+                            center = fitz.Point(x + w/2, y + h/2)
+                            page.draw_circle(center, w * 1.2, color=(0.7, 0.7, 0.7), width=1)
+                            print(f"   ✅ Added unselected indicator for {label}")
+                        except Exception as e:
+                            print(f"   ❌ Error adding unselected indicator for {dtype}: {e}")
+                
+        except Exception as e:
+            print(f"❌ Error adding dwelling visual indicators: {e}")
     
     def convert_pdf_to_image(self, pdf_path: str, page_num: int = 0) -> str:
         """Convert PDF page to base64 image for preview"""
