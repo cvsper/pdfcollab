@@ -596,6 +596,88 @@ class PDFProcessor:
                             field['assigned_to'] = 'user1'
                             print(f"   ✅ Mapped {display_name} → {mapped_field} = {field['value']}")
                 
+                # Map frontend field names (without numbers) to PDF fields
+                frontend_to_pdf_mappings = {
+                    'property_address': 'property_address1',
+                    'apartment_number': 'apt_num1',
+                    'city': 'city1',
+                    'state': 'state1',
+                    'zip_code': 'zip1',
+                    'first_name': 'first_name2',
+                    'last_name': 'last_name2',
+                    'telephone': 'phone2',
+                    'email': 'email2',
+                    'owner_name': 'landlord_name3',
+                    'owner_address': 'address3',
+                    'owner_city': 'city3',
+                    'owner_state': 'text_55cits',
+                    'owner_zip': 'text_56qpfj',
+                    'owner_telephone': 'phone3',
+                    'owner_email': 'email3'
+                }
+                
+                for frontend_field, pdf_field in frontend_to_pdf_mappings.items():
+                    if frontend_field in user1_data and user1_data[frontend_field]:
+                        for field in pdf_fields:
+                            if field.get('pdf_field_name') == pdf_field:
+                                field['value'] = user1_data[frontend_field]
+                                field['assigned_to'] = 'user1'
+                                print(f"   ✅ Frontend field: {frontend_field} → {pdf_field} = {field['value']}")
+                                break
+                
+                # Handle frontend-style array formats for Options A, B, D
+                # Option A: Utility programs array
+                utility_programs = user1_data.get('utility_program', [])
+                if utility_programs:
+                    print(f"   📋 Processing Option A utility programs: {utility_programs}")
+                    program_field_mappings = {
+                        'electric_discount': 'elec_discount4',
+                        'matching_payment': 'matching_payment_eversource4',
+                        'low_income_discount': 'low_income4',
+                        'bill_forgiveness': 'bill_forgive4',
+                        'matching_payment_united': 'matching_pay_united4'
+                    }
+                    
+                    for program in utility_programs:
+                        if program in program_field_mappings:
+                            target_field_name = program_field_mappings[program]
+                            for field in pdf_fields:
+                                if field.get('pdf_field_name') == target_field_name:
+                                    field['value'] = 'Yes'
+                                    field['assigned_to'] = 'user1'
+                                    print(f"   ✅ Option A: {program} → {target_field_name}")
+                                    break
+                
+                # Option B: Documentation array
+                documentation = user1_data.get('documentation', [])
+                if documentation:
+                    print(f"   📋 Processing Option B documentation: {documentation}")
+                    doc_field_mappings = {
+                        'ebt_award': 'ebt4',
+                        'energy_assistance': 'energy_award_letter4',
+                        'section_8': 'section_eight4'
+                    }
+                    
+                    for doc in documentation:
+                        if doc in doc_field_mappings:
+                            target_field_name = doc_field_mappings[doc]
+                            for field in pdf_fields:
+                                if field.get('pdf_field_name') == target_field_name:
+                                    field['value'] = 'Yes'
+                                    field['assigned_to'] = 'user1'
+                                    print(f"   ✅ Option B: {doc} → {target_field_name}")
+                                    break
+                
+                # Option D: Multifamily
+                if user1_data.get('qualification_option') == 'option_d':
+                    print(f"   📋 Processing Option D multifamily")
+                    for field in pdf_fields:
+                        if field.get('pdf_field_name') == 'multifam4':
+                            field['value'] = 'Yes'
+                            field['assigned_to'] = 'user1'
+                            print(f"   ✅ Option D: multifam4")
+                            break
+                
                 # Map User 2 signature data
                 user2_data = document.get('user2_data', {})
                 for field in pdf_fields:
