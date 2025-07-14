@@ -878,10 +878,13 @@ class PDFProcessor:
                                 if signature_text.startswith('typed:'):
                                     signature_text = signature_text[6:].strip()
                                 
-                                # SIMPLIFIED APPROACH: Just set the form field value directly
-                                widget.field_value = signature_text
+                                # Convert to cursive-style unicode characters
+                                cursive_text = self.convert_to_cursive_unicode(signature_text)
+                                
+                                # Use the original working approach - set form field value directly
+                                widget.field_value = cursive_text
                                 widget.update()
-                                print(f"✅ Set form field '{field_name}' to '{signature_text}'")
+                                print(f"✅ Set form field '{field_name}' to cursive '{cursive_text}'")
                                 
                                 filled_count += 1
                                 continue
@@ -940,6 +943,27 @@ class PDFProcessor:
             traceback.print_exc()
             return False
     
+    def convert_to_cursive_unicode(self, text: str) -> str:
+        """Convert regular text to cursive-style Unicode characters"""
+        # Mathematical script/italic Unicode characters (U+1D49C-U+1D4CF)
+        cursive_map = {
+            'A': '𝒜', 'B': '𝐵', 'C': '𝒞', 'D': '𝒟', 'E': '𝐸', 'F': '𝐹', 'G': '𝒢', 'H': '𝐻', 'I': '𝐼',
+            'J': '𝒥', 'K': '𝒦', 'L': '𝐿', 'M': '𝑀', 'N': '𝒩', 'O': '𝒪', 'P': '𝒫', 'Q': '𝒬', 'R': '𝑅',
+            'S': '𝒮', 'T': '𝒯', 'U': '𝒰', 'V': '𝒱', 'W': '𝒲', 'X': '𝒳', 'Y': '𝒴', 'Z': '𝒵',
+            'a': '𝒶', 'b': '𝒷', 'c': '𝒸', 'd': '𝒹', 'e': '𝑒', 'f': '𝒻', 'g': '𝑔', 'h': '𝒽', 'i': '𝒾',
+            'j': '𝒿', 'k': '𝓀', 'l': '𝓁', 'm': '𝓂', 'n': '𝓃', 'o': '𝑜', 'p': '𝓅', 'q': '𝓆', 'r': '𝓇',
+            's': '𝓈', 't': '𝓉', 'u': '𝓊', 'v': '𝓋', 'w': '𝓌', 'x': '𝓍', 'y': '𝓎', 'z': '𝓏'
+        }
+        
+        result = ""
+        for char in text:
+            if char in cursive_map:
+                result += cursive_map[char]
+            else:
+                result += char  # Keep numbers, spaces, punctuation as-is
+        
+        return result
+
     def insert_signature_text(self, page, signature_text: str, position: dict, field_name: str):
         """Simple signature text insertion - RESTORED TO WORKING VERSION"""
         try:
