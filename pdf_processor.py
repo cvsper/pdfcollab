@@ -1063,24 +1063,18 @@ class PDFProcessor:
             
             # If we have image signatures, create overlay and merge
             if image_signatures:
-                # Save current state
-                temp_path = "temp_before_signatures.pdf"
-                doc.save(temp_path)
+                doc.save("temp_before_signatures.pdf")
                 doc.close()
                 
                 # Create signature overlays and merge
-                final_pdf_path = self.create_signature_overlays(temp_path, image_signatures)
+                final_pdf_path = self.create_signature_overlays("temp_before_signatures.pdf", image_signatures)
                 
                 # Reopen the merged PDF
                 if final_pdf_path and os.path.exists(final_pdf_path):
-                    # Clean up temp file
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
-                    doc = fitz.open(final_pdf_path)
-                    return doc
-                else:
-                    # Fallback: reopen original if overlay failed
-                    doc = fitz.open(temp_path)
+                    # Replace the original document with the merged one
+                    import shutil
+                    shutil.move(final_pdf_path, "temp_before_signatures.pdf")
+                    doc = fitz.open("temp_before_signatures.pdf")
                     return doc
                     
         except Exception as e:
