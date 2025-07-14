@@ -848,11 +848,8 @@ class PDFProcessor:
                         
                         # Track signature fields separately
                         if field.get('type') == 'signature':
-                            # For image signatures, use empty value to prevent base64 in form
-                            signature_value = "" if field.get('is_image_signature', False) else field['value']
-                            
                             signature_fields[pdf_field_name] = {
-                                'value': signature_value,
+                                'value': field['value'],
                                 'position': field.get('position', {}),
                                 'page': field.get('page', 0),
                                 'name': field.get('name', ''),
