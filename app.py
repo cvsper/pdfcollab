@@ -2131,13 +2131,35 @@ def user2_interface(document_id):
                         
                         # Map Applicant Signature field
                         if ('Applicant' in field_name or field['pdf_field_name'] == 'signature3') and user2_data.get('applicant_signature'):
-                            field['value'] = user2_data['applicant_signature']
-                            print(f"🖋️  Applied Applicant signature to field '{field['name']}' (pdf_field: '{field['pdf_field_name']}'): '{user2_data['applicant_signature'][:20]}...'")
+                            signature_value = user2_data['applicant_signature']
+                            # Check if it's base64 image data
+                            if signature_value.startswith('data:image/'):
+                                # For base64 images, skip form field - only overlay image
+                                field['value'] = ""  # Empty form field value
+                                field['is_image_signature'] = True
+                                field['image_data'] = signature_value
+                                print(f"🖋️  Applied Applicant signature (image) to field '{field['name']}' -> [Will overlay image]")
+                            else:
+                                # For typed signatures, use the text directly
+                                field['value'] = signature_value
+                                field['is_image_signature'] = False
+                                print(f"🖋️  Applied Applicant signature (text) to field '{field['name']}': '{signature_value[:20]}...'")
                         
                         # Map Property Owner Signature field  
                         elif ('Property Owner' in field_name or field['pdf_field_name'] == 'property_ower_sig3') and user2_data.get('owner_signature'):
-                            field['value'] = user2_data['owner_signature']
-                            print(f"🖋️  Applied Property Owner signature to field '{field['name']}' (pdf_field: '{field['pdf_field_name']}'): '{user2_data['owner_signature'][:20]}...'")
+                            signature_value = user2_data['owner_signature']
+                            # Check if it's base64 image data
+                            if signature_value.startswith('data:image/'):
+                                # For base64 images, skip form field - only overlay image
+                                field['value'] = ""  # Empty form field value
+                                field['is_image_signature'] = True
+                                field['image_data'] = signature_value
+                                print(f"🖋️  Applied Property Owner signature (image) to field '{field['name']}' -> [Will overlay image]")
+                            else:
+                                # For typed signatures, use the text directly
+                                field['value'] = signature_value
+                                field['is_image_signature'] = False
+                                print(f"🖋️  Applied Property Owner signature (text) to field '{field['name']}': '{signature_value[:20]}...'")
                         
                         else:
                             print(f"⚠️  Signature field '{field_name}' found but no matching signature data")
