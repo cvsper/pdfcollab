@@ -77,19 +77,22 @@ def test_complete_form():
         'people_in_household4': '4',
         'annual_income4': '65000',
         
-        # Section 4: Landlord Information (owner so might not be needed but filling anyway)
+        # Section 4: Property Owner Information (separate from applicant)
         'landlord_name3': 'Property Management LLC',
-        'address3': '456 Landlord Avenue',
-        'city3': 'Boston',
-        'text_55cits': 'MA',
-        'text_56qpfj': '02102',
+        'address3': '456 Property Owner Avenue',
+        'city3': 'Cambridge',           # Property Owner City (different from applicant)
+        'text_55cits': 'MA',           # Property Owner State
+        'text_56qpfj': '02139',        # Property Owner ZIP (different from applicant)
         'phone3': '617-555-0300',
         'email3': 'management@property.com',
         
         # Signatures and Dates
         'signature3': 'John Complete',
         'property_ower_sig3': 'John Complete',
-        'date': '12/15/2024'
+        'date': '12/15/2024',
+        
+        # Section 5: Additional fields that might exist
+        'people_in_household_overage4': '0'
     }
     
     # Initialize PDF processor
