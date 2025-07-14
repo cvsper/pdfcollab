@@ -144,6 +144,7 @@
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                         </svg>
                                         <span class="ml-2 text-sm text-gray-700">Signature added</span>
+                                        <div class="ml-4 p-2 border border-gray-200 rounded bg-white" id="applicant-signature-display"></div>
                                     </div>
                                     <button type="button" onclick="changeApplicantSignature()"
                                             class="text-sm text-blue-600 hover:text-blue-500">Change</button>
@@ -599,9 +600,12 @@
 
         function saveApplicantSignature() {
             let signatureData = '';
+            const displayDiv = document.getElementById('applicant-signature-display');
             
             if (applicantSignatureMethod === 'draw') {
                 signatureData = applicantCanvas.toDataURL();
+                // Show drawn signature as small image
+                displayDiv.innerHTML = `<img src="${signatureData}" style="max-width: 120px; max-height: 40px;" alt="Signature">`;
             } else {
                 const typedSig = document.getElementById('applicant-typed-signature').value.trim();
                 if (!typedSig) {
@@ -609,6 +613,8 @@
                     return;
                 }
                 signatureData = typedSig;
+                // Show typed signature in cursive
+                displayDiv.innerHTML = `<span class="signature-preview">${typedSig}</span>`;
             }
             
             document.getElementById('applicant-signature-data').value = signatureData;
@@ -627,6 +633,7 @@
         function changeApplicantSignature() {
             document.getElementById('applicant-signature-complete').classList.add('hidden');
             document.getElementById('applicant-signature-area').classList.remove('hidden');
+            document.getElementById('applicant-signature-display').innerHTML = '';
             applicantSignatureComplete = false;
         }
 
