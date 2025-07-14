@@ -697,13 +697,35 @@ class PDFProcessor:
                         
                         # Map Applicant Signature field
                         if 'Applicant' in field_name and user2_data.get('applicant_signature'):
-                            field['value'] = user2_data['applicant_signature']
-                            print(f"🖋️  Mapped Applicant signature: '{field['name']}' -> '{field['value'][:20]}...'")
+                            signature_value = user2_data['applicant_signature']
+                            # Check if it's base64 image data
+                            if signature_value.startswith('data:image/'):
+                                # For base64 images, show placeholder text instead
+                                field['value'] = "[Digital Signature Applied]"
+                                field['is_image_signature'] = True
+                                field['image_data'] = signature_value
+                                print(f"🖋️  Mapped Applicant signature (image): '{field['name']}' -> '[Digital Signature Applied]'")
+                            else:
+                                # For typed signatures, use the text directly
+                                field['value'] = signature_value
+                                field['is_image_signature'] = False
+                                print(f"🖋️  Mapped Applicant signature (text): '{field['name']}' -> '{field['value'][:20]}...'")
                         
                         # Map Property Owner Signature field  
                         elif 'Property Owner' in field_name and user2_data.get('owner_signature'):
-                            field['value'] = user2_data['owner_signature']
-                            print(f"🖋️  Mapped Property Owner signature: '{field['name']}' -> '{field['value'][:20]}...'")
+                            signature_value = user2_data['owner_signature']
+                            # Check if it's base64 image data
+                            if signature_value.startswith('data:image/'):
+                                # For base64 images, show placeholder text instead
+                                field['value'] = "[Digital Signature Applied]"
+                                field['is_image_signature'] = True
+                                field['image_data'] = signature_value
+                                print(f"🖋️  Mapped Property Owner signature (image): '{field['name']}' -> '[Digital Signature Applied]'")
+                            else:
+                                # For typed signatures, use the text directly
+                                field['value'] = signature_value
+                                field['is_image_signature'] = False
+                                print(f"🖋️  Mapped Property Owner signature (text): '{field['name']}' -> '{field['value'][:20]}...'")
                 
                 # Store mapped fields in document
                 document['pdf_fields'] = pdf_fields
@@ -1405,6 +1427,11 @@ class PDFProcessor:
                 if field.get('type') == 'signature' and field.get('value'):
                     signature_text = field['value']
                     field_name = field.get('name', '')
+                    
+                    # Skip image signatures in overlay - they're already handled as text placeholders
+                    if field.get('is_image_signature', False):
+                        print(f"🖼️  Skipping image signature overlay for '{field_name}' - using placeholder text")
+                        # The placeholder text "[Digital Signature Applied]" will be used
                     
                     # Use the same exact coordinates as the main processor
                     if field_name in ['Applicant Signature', 'signature3']:
