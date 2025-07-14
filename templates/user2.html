@@ -335,7 +335,8 @@ function toggleUploadPanel() {
 
 function handleSupportingDocs(input) {
     const files = Array.from(input.files);
-    supportingFiles = supportingFiles.concat(files);
+    // Replace existing files instead of accumulating them
+    supportingFiles = files;
     updateSupportingDocsList();
 }
 

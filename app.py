@@ -2345,6 +2345,57 @@ def download_document(document_id):
         flash(f'Error generating PDF download: {str(e)}', 'error')
         return redirect(url_for('completion_page', document_id=document_id))
 
+@app.route('/download-support/<document_id>/<filename>')
+def download_supporting_document(document_id, filename):
+    """Download supporting document for a specific document"""
+    print(f"🔽 Download request for supporting document: {document_id}/{filename}")
+    
+    user_id = current_user.id if current_user.is_authenticated else None
+    has_access, document = check_document_access(document_id, user_id)
+    
+    if not has_access:
+        print(f"❌ Document not found or access denied: {document_id}")
+        if not current_user.is_authenticated:
+            return render_template('error.html', 
+                                 error_title='Document Not Found',
+                                 error_message='The requested document could not be found or may have been removed.')
+        flash('Document not found or access denied.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Find the supporting document
+    supporting_docs = document.get('supporting_docs', [])
+    target_doc = None
+    
+    for doc in supporting_docs:
+        if doc.get('filename') == filename:
+            target_doc = doc
+            break
+    
+    if not target_doc:
+        print(f"❌ Supporting document not found: {filename}")
+        flash('Supporting document not found.', 'error')
+        return redirect(url_for('completion_page', document_id=document_id))
+    
+    # Check if file exists
+    file_path = target_doc.get('path')
+    if not file_path or not os.path.exists(file_path):
+        print(f"❌ Supporting document file not found: {file_path}")
+        flash('Supporting document file not found on server.', 'error')
+        return redirect(url_for('completion_page', document_id=document_id))
+    
+    print(f"📤 Sending supporting document: {filename}")
+    
+    try:
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        print(f"❌ Error downloading supporting document: {e}")
+        flash('Error downloading supporting document.', 'error')
+        return redirect(url_for('completion_page', document_id=document_id))
+
 @app.route('/api/pdf-fields/<document_id>')
 def get_pdf_fields(document_id):
     """API endpoint to get PDF fields for a document"""

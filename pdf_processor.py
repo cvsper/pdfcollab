@@ -80,6 +80,15 @@ class PDFProcessor:
             'Landlord Phone': 'phone3',
             'Landlord Email': 'email3',
             
+            # Property Owner info (frontend field names)
+            'Property Owner Name': 'landlord_name3',
+            'Property Owner Address': 'address3',
+            'Property Owner City': 'city3',
+            'Property Owner State': 'text_55cits',
+            'Property Owner ZIP': 'text_56qpfj',
+            'Property Owner Phone': 'phone3',
+            'Property Owner Email': 'email3',
+            
             # Section 4: Signatures
             'Applicant Signature': 'signature3',
             'Property Owner Signature': 'property_ower_sig3',

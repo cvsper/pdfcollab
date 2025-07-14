@@ -209,7 +209,13 @@ function downloadDocument() {
 }
 
 function downloadSupportingDoc(filename) {
-    alert('Download ' + filename + ' - functionality would be implemented to download supporting documents');
+    // Download the supporting document using the new route
+    const link = document.createElement('a');
+    link.href = "{{ url_for('download_supporting_document', document_id=document.id, filename='FILENAME_PLACEHOLDER') }}".replace('FILENAME_PLACEHOLDER', filename);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 function printSummary() {
