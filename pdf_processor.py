@@ -700,11 +700,11 @@ class PDFProcessor:
                             signature_value = user2_data['applicant_signature']
                             # Check if it's base64 image data
                             if signature_value.startswith('data:image/'):
-                                # For base64 images, keep the data but mark as image signature
-                                field['value'] = signature_value  # Keep original for processing
+                                # For base64 images, show clean placeholder text instead
+                                field['value'] = "✍ Digital Signature"
                                 field['is_image_signature'] = True
                                 field['image_data'] = signature_value
-                                print(f"🖋️  Mapped Applicant signature (image): '{field['name']}' -> [Image Data]")
+                                print(f"🖋️  Mapped Applicant signature (image): '{field['name']}' -> [Digital Signature]")
                             else:
                                 # For typed signatures, use the text directly
                                 field['value'] = signature_value
@@ -716,11 +716,11 @@ class PDFProcessor:
                             signature_value = user2_data['owner_signature']
                             # Check if it's base64 image data
                             if signature_value.startswith('data:image/'):
-                                # For base64 images, keep the data but mark as image signature
-                                field['value'] = signature_value  # Keep original for processing
+                                # For base64 images, show clean placeholder text instead
+                                field['value'] = "✍ Digital Signature"
                                 field['is_image_signature'] = True
                                 field['image_data'] = signature_value
-                                print(f"🖋️  Mapped Property Owner signature (image): '{field['name']}' -> [Image Data]")
+                                print(f"🖋️  Mapped Property Owner signature (image): '{field['name']}' -> [Digital Signature]")
                             else:
                                 # For typed signatures, use the text directly
                                 field['value'] = signature_value
