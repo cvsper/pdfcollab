@@ -700,11 +700,11 @@ class PDFProcessor:
                             signature_value = user2_data['applicant_signature']
                             # Check if it's base64 image data
                             if signature_value.startswith('data:image/'):
-                                # For base64 images, skip form field - only overlay image
-                                field['value'] = ""  # Empty form field value
+                                # For base64 images, keep the data but mark as image signature
+                                field['value'] = signature_value  # Keep original for processing
                                 field['is_image_signature'] = True
                                 field['image_data'] = signature_value
-                                print(f"🖋️  Mapped Applicant signature (image): '{field['name']}' -> [Will overlay image]")
+                                print(f"🖋️  Mapped Applicant signature (image): '{field['name']}' -> [Image Data]")
                             else:
                                 # For typed signatures, use the text directly
                                 field['value'] = signature_value
@@ -716,11 +716,11 @@ class PDFProcessor:
                             signature_value = user2_data['owner_signature']
                             # Check if it's base64 image data
                             if signature_value.startswith('data:image/'):
-                                # For base64 images, skip form field - only overlay image
-                                field['value'] = ""  # Empty form field value
+                                # For base64 images, keep the data but mark as image signature
+                                field['value'] = signature_value  # Keep original for processing
                                 field['is_image_signature'] = True
                                 field['image_data'] = signature_value
-                                print(f"🖋️  Mapped Property Owner signature (image): '{field['name']}' -> [Will overlay image]")
+                                print(f"🖋️  Mapped Property Owner signature (image): '{field['name']}' -> [Image Data]")
                             else:
                                 # For typed signatures, use the text directly
                                 field['value'] = signature_value
@@ -741,9 +741,8 @@ class PDFProcessor:
             # Step 2: Reopen filled PDF and add overlays
             doc = fitz.open(temp_output)
             
-            # Step 3: Add image signature overlays
-            print("🖼️  Adding image signature overlays...")
-            self.add_image_signature_overlays(doc, pdf_fields)
+            # Step 3: All fields are filled directly in form fields - no overlays needed
+            print("📋 All fields filled directly in PDF form fields (no overlay duplicates)")
             
             # Step 4: Add Section 5 (Zero Income Affidavit) fields with exact positions
             if 'user2_data' in document and document['user2_data']:
@@ -839,7 +838,7 @@ class PDFProcessor:
                             pdf_field_name = base_name.lower().replace(' ', '_')
                         
                         # Exclude image signatures from field mapping to prevent base64 in form fields
-                        if not field.get('is_image_signature', False) and field.get('value'):
+                        if not field.get('is_image_signature', False):
                             field_mapping[pdf_field_name] = field['value']
                         
                         # Track signature fields separately
@@ -1019,43 +1018,6 @@ class PDFProcessor:
                 color=(0, 0, 0.7),
                 fontname="times-italic"
             )
-    
-    def add_image_signature_overlays(self, doc, pdf_fields: List[Dict[str, Any]]):
-        """Add image signature overlays to the PDF"""
-        try:
-            for field in pdf_fields:
-                if field.get('is_image_signature', False) and field.get('image_data'):
-                    field_name = field.get('name', '')
-                    print(f"🖼️  Adding image signature overlay for: {field_name}")
-                    
-                    # Determine page and coordinates
-                    page_num = field.get('page', 0)
-                    if page_num >= len(doc):
-                        continue
-                    
-                    page = doc[page_num]
-                    
-                    # Use specific coordinates for known signature fields
-                    if 'Applicant' in field_name or 'applicant' in field_name.lower():
-                        # Applicant signature coordinates
-                        x, y = 66, 152
-                        print(f"🎯 Applicant signature at ({x}, {y})")
-                    elif 'Property Owner' in field_name or 'owner' in field_name.lower():
-                        # Property Owner signature coordinates  
-                        x, y = 369, 622
-                        print(f"🎯 Property Owner signature at ({x}, {y})")
-                    else:
-                        # Use field position if available
-                        position = field.get('position', {})
-                        x = position.get('x', 100)
-                        y = position.get('y', 100)
-                        print(f"🎯 Generic signature at ({x}, {y})")
-                    
-                    # Insert the signature image
-                    self.insert_signature_image(page, field['image_data'], x, y, field_name)
-                    
-        except Exception as e:
-            print(f"⚠️  Error adding image signature overlays: {e}")
     
     def add_dwelling_visual_indicators(self, doc, document: Dict[str, Any]):
         """Add visual indicators for dwelling type selection to make it obvious"""
