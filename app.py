@@ -1232,6 +1232,20 @@ def fill_pdf_fields(pdf_path, field_data, output_path):
     """Legacy PDF field filling function"""
     return fill_pdf_fields_advanced(pdf_path, {'pdf_fields': [], 'user1_data': field_data, 'user2_data': {}}, output_path)
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint with deployment version info"""
+    return jsonify({
+        'status': 'healthy',
+        'version': '2024-12-15-fix-upload',
+        'features': {
+            'supporting_docs_download': True,
+            'signature_styling': True,
+            'upload_fix': True
+        },
+        'last_update': 'Fixed supporting document upload requiring 3 attempts'
+    })
+
 @app.route('/')
 def index():
     """Landing page - React app for marketing site"""
