@@ -89,9 +89,69 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="p-4 border-2 border-blue-300 bg-blue-50 rounded-lg">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Applicant Signature *</label>
-                            <input type="text" name="applicant_signature" 
-                                   class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                   placeholder="Type your signature" required>
+                            
+                            <!-- Signature Component -->
+                            <div class="signature-component">
+                                <div id="applicant-signature-prompt" class="text-center">
+                                    <p class="text-sm text-gray-600 mb-3">Choose how to add your signature</p>
+                                    <button type="button" onclick="startApplicantSigning()" 
+                                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                                        Add Signature
+                                    </button>
+                                </div>
+                                
+                                <div id="applicant-signature-area" class="hidden">
+                                    <div class="flex justify-center space-x-4 mb-4">
+                                        <button type="button" onclick="setApplicantSignatureMethod('draw')" 
+                                                class="px-3 py-1 text-sm font-medium rounded-md bg-blue-100 text-blue-700" id="applicant-draw-btn">Draw</button>
+                                        <button type="button" onclick="setApplicantSignatureMethod('type')" 
+                                                class="px-3 py-1 text-sm font-medium rounded-md bg-gray-100 text-gray-700" id="applicant-type-btn">Type</button>
+                                    </div>
+                                    
+                                    <div id="applicant-draw-signature" class="border border-gray-300 rounded-md bg-white">
+                                        <canvas id="applicant-signature-canvas" width="350" height="120" class="w-full touch-none"></canvas>
+                                    </div>
+                                    
+                                    <div id="applicant-type-signature" class="hidden">
+                                        <input type="text" id="applicant-typed-signature" placeholder="Type your signature"
+                                               class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm signature-input">
+                                        <div class="mt-2 p-3 border border-gray-200 rounded-md bg-white min-h-[60px] flex items-center justify-center">
+                                            <span class="signature-preview" id="applicant-signature-preview">Type your name above...</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-4 flex justify-between">
+                                        <button type="button" onclick="cancelApplicantSignature()"
+                                                class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                            Cancel
+                                        </button>
+                                        <div class="space-x-2">
+                                            <button type="button" onclick="clearApplicantSignature()" id="applicant-clear-btn"
+                                                    class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                                Clear
+                                            </button>
+                                            <button type="button" onclick="saveApplicantSignature()"
+                                                    class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                                                Save Signature
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="applicant-signature-complete" class="flex justify-between items-center hidden">
+                                    <div class="flex items-center">
+                                        <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <span class="ml-2 text-sm text-gray-700">Signature added</span>
+                                    </div>
+                                    <button type="button" onclick="changeApplicantSignature()"
+                                            class="text-sm text-blue-600 hover:text-blue-500">Change</button>
+                                </div>
+                                
+                                <input type="hidden" name="applicant_signature" id="applicant-signature-data" required>
+                            </div>
+                            
                             <p class="text-xs text-blue-600 mt-1">This authorizes the application submission</p>
                         </div>
                         <div class="p-4 border-2 border-blue-300 bg-blue-50 rounded-lg">
@@ -452,6 +512,162 @@
                 fileInput.dispatchEvent(new Event('change'));
             });
         });
+
+        // Applicant Signature Functionality
+        let applicantCanvas, applicantCtx, applicantIsDrawing = false;
+        let applicantSignatureMethod = 'draw';
+        let applicantSignatureComplete = false;
+
+        function startApplicantSigning() {
+            document.getElementById('applicant-signature-prompt').classList.add('hidden');
+            document.getElementById('applicant-signature-area').classList.remove('hidden');
+            initApplicantCanvas();
+            setApplicantSignatureMethod('draw');
+        }
+
+        function initApplicantCanvas() {
+            applicantCanvas = document.getElementById('applicant-signature-canvas');
+            applicantCtx = applicantCanvas.getContext('2d');
+            
+            applicantCanvas.addEventListener('mousedown', startApplicantDrawing);
+            applicantCanvas.addEventListener('mousemove', drawApplicant);
+            applicantCanvas.addEventListener('mouseup', stopApplicantDrawing);
+            applicantCanvas.addEventListener('touchstart', startApplicantDrawing);
+            applicantCanvas.addEventListener('touchmove', drawApplicant);
+            applicantCanvas.addEventListener('touchend', stopApplicantDrawing);
+        }
+
+        function setApplicantSignatureMethod(method) {
+            applicantSignatureMethod = method;
+            
+            const drawBtn = document.getElementById('applicant-draw-btn');
+            const typeBtn = document.getElementById('applicant-type-btn');
+            
+            if (method === 'draw') {
+                drawBtn.className = 'px-3 py-1 text-sm font-medium rounded-md bg-blue-100 text-blue-700';
+                typeBtn.className = 'px-3 py-1 text-sm font-medium rounded-md bg-gray-100 text-gray-700';
+                document.getElementById('applicant-draw-signature').classList.remove('hidden');
+                document.getElementById('applicant-type-signature').classList.add('hidden');
+                document.getElementById('applicant-clear-btn').classList.remove('hidden');
+            } else {
+                typeBtn.className = 'px-3 py-1 text-sm font-medium rounded-md bg-blue-100 text-blue-700';
+                drawBtn.className = 'px-3 py-1 text-sm font-medium rounded-md bg-gray-100 text-gray-700';
+                document.getElementById('applicant-type-signature').classList.remove('hidden');
+                document.getElementById('applicant-draw-signature').classList.add('hidden');
+                document.getElementById('applicant-clear-btn').classList.add('hidden');
+            }
+        }
+
+        function startApplicantDrawing(e) {
+            applicantIsDrawing = true;
+            const rect = applicantCanvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            
+            applicantCtx.beginPath();
+            applicantCtx.moveTo(x, y);
+            e.preventDefault();
+        }
+
+        function drawApplicant(e) {
+            if (!applicantIsDrawing) return;
+            
+            const rect = applicantCanvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            
+            applicantCtx.lineWidth = 2;
+            applicantCtx.lineCap = 'round';
+            applicantCtx.strokeStyle = '#000';
+            applicantCtx.lineTo(x, y);
+            applicantCtx.stroke();
+            e.preventDefault();
+        }
+
+        function stopApplicantDrawing() {
+            applicantIsDrawing = false;
+        }
+
+        function clearApplicantSignature() {
+            if (applicantSignatureMethod === 'draw') {
+                applicantCtx.clearRect(0, 0, applicantCanvas.width, applicantCanvas.height);
+            } else {
+                document.getElementById('applicant-typed-signature').value = '';
+                document.getElementById('applicant-signature-preview').textContent = 'Type your name above...';
+            }
+        }
+
+        function saveApplicantSignature() {
+            let signatureData = '';
+            
+            if (applicantSignatureMethod === 'draw') {
+                signatureData = applicantCanvas.toDataURL();
+            } else {
+                const typedSig = document.getElementById('applicant-typed-signature').value.trim();
+                if (!typedSig) {
+                    alert('Please enter your signature');
+                    return;
+                }
+                signatureData = typedSig;
+            }
+            
+            document.getElementById('applicant-signature-data').value = signatureData;
+            document.getElementById('applicant-signature-area').classList.add('hidden');
+            document.getElementById('applicant-signature-complete').classList.remove('hidden');
+            
+            applicantSignatureComplete = true;
+        }
+
+        function cancelApplicantSignature() {
+            document.getElementById('applicant-signature-area').classList.add('hidden');
+            document.getElementById('applicant-signature-prompt').classList.remove('hidden');
+            clearApplicantSignature();
+        }
+
+        function changeApplicantSignature() {
+            document.getElementById('applicant-signature-complete').classList.add('hidden');
+            document.getElementById('applicant-signature-area').classList.remove('hidden');
+            applicantSignatureComplete = false;
+        }
+
+        // Typed signature preview for applicant
+        document.addEventListener('DOMContentLoaded', function() {
+            const typedInput = document.getElementById('applicant-typed-signature');
+            const preview = document.getElementById('applicant-signature-preview');
+            
+            if (typedInput && preview) {
+                typedInput.addEventListener('input', function(e) {
+                    const text = e.target.value.trim();
+                    preview.textContent = text || 'Type your name above...';
+                });
+            }
+        });
     </script>
+
+    <style>
+        /* Google Fonts for signature styling */
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&display=swap');
+        
+        /* Signature styling */
+        .signature-preview, .signature-input {
+            font-family: 'Dancing Script', 'Brush Script MT', 'Lucida Handwriting', cursive !important;
+            font-size: 24px !important;
+            color: #2563eb !important;
+            font-weight: 600 !important;
+        }
+        
+        #applicant-signature-preview {
+            font-family: 'Dancing Script', 'Brush Script MT', 'Lucida Handwriting', cursive !important;
+            font-size: 24px !important;
+            color: #2563eb !important;
+            font-weight: 600 !important;
+            font-style: italic !important;
+        }
+        
+        #applicant-typed-signature {
+            font-family: 'Dancing Script', 'Brush Script MT', cursive !important;
+            font-size: 18px !important;
+        }
+    </style>
 </body>
 </html>
