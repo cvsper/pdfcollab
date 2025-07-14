@@ -837,7 +837,9 @@ class PDFProcessor:
                             base_name = display_name.split(' (')[0]
                             pdf_field_name = base_name.lower().replace(' ', '_')
                         
-                        field_mapping[pdf_field_name] = field['value']
+                        # Exclude image signatures from field mapping to prevent base64 in form fields
+                        if not field.get('is_image_signature', False):
+                            field_mapping[pdf_field_name] = field['value']
                         
                         # Track signature fields separately
                         if field.get('type') == 'signature':
@@ -845,7 +847,9 @@ class PDFProcessor:
                                 'value': field['value'],
                                 'position': field.get('position', {}),
                                 'page': field.get('page', 0),
-                                'name': field.get('name', '')
+                                'name': field.get('name', ''),
+                                'is_image_signature': field.get('is_image_signature', False),
+                                'image_data': field.get('image_data', '')
                             }
             
             print(f"📋 Created field mapping with {len(field_mapping)} entries")
@@ -858,10 +862,16 @@ class PDFProcessor:
                 
                 for widget in widgets:
                     field_name = widget.field_name
-                    if field_name and field_name in field_mapping:
+                    if field_name and (field_name in field_mapping or field_name in signature_fields):
                         # Handle signature fields with EXACT positioning and correct orientation
                         if field_name in signature_fields:
                             print(f"🎯 Processing signature field: {field_name}")
+                            
+                            # Skip image signatures - they'll be handled in overlay step
+                            if signature_fields[field_name].get('is_image_signature', False):
+                                print(f"🖼️  Skipping image signature form field: {field_name}")
+                                continue
+                            
                             try:
                                 signature_text = signature_fields[field_name]['value']
                                 # Remove "typed:" prefix if present
