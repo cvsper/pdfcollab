@@ -6,10 +6,6 @@ from PIL import Image, ImageDraw
 import base64
 from io import BytesIO
 import uuid
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
-from reportlab.lib.pagesizes import letter
-from PyPDF2 import PdfReader, PdfWriter
 
 class PDFProcessor:
     def __init__(self):
@@ -747,7 +743,7 @@ class PDFProcessor:
             
             # Step 3: Add image signature overlays
             print("🖼️  Adding image signature overlays...")
-            doc = self.add_image_signature_overlays(doc, pdf_fields)
+            self.add_image_signature_overlays(doc, pdf_fields)
             
             # Step 4: Add Section 5 (Zero Income Affidavit) fields with exact positions
             if 'user2_data' in document and document['user2_data']:
@@ -1025,151 +1021,41 @@ class PDFProcessor:
             )
     
     def add_image_signature_overlays(self, doc, pdf_fields: List[Dict[str, Any]]):
-        """Add image signature overlays using ReportLab + PyPDF2 approach"""
+        """Add image signature overlays to the PDF"""
         try:
-            # Collect all image signatures that need to be overlaid
-            image_signatures = []
             for field in pdf_fields:
                 if field.get('is_image_signature', False) and field.get('image_data'):
                     field_name = field.get('name', '')
-                    print(f"🖼️  Found image signature for: {field_name}")
+                    print(f"🖼️  Adding image signature overlay for: {field_name}")
                     
                     # Determine page and coordinates
                     page_num = field.get('page', 0)
+                    if page_num >= len(doc):
+                        continue
+                    
+                    page = doc[page_num]
                     
                     # Use specific coordinates for known signature fields
                     if 'Applicant' in field_name or 'applicant' in field_name.lower():
-                        # Applicant signature coordinates (convert from PyMuPDF to ReportLab coords)
-                        x, y = 66, 700  # ReportLab uses bottom-left origin
+                        # Applicant signature coordinates
+                        x, y = 66, 152
                         print(f"🎯 Applicant signature at ({x}, {y})")
                     elif 'Property Owner' in field_name or 'owner' in field_name.lower():
-                        # Property Owner signature coordinates
-                        x, y = 369, 150  # ReportLab uses bottom-left origin
+                        # Property Owner signature coordinates  
+                        x, y = 369, 622
                         print(f"🎯 Property Owner signature at ({x}, {y})")
                     else:
                         # Use field position if available
                         position = field.get('position', {})
                         x = position.get('x', 100)
-                        y = 700 - position.get('y', 100)  # Convert coordinates
+                        y = position.get('y', 100)
                         print(f"🎯 Generic signature at ({x}, {y})")
                     
-                    image_signatures.append({
-                        'field_name': field_name,
-                        'image_data': field['image_data'],
-                        'page_num': page_num,
-                        'x': x,
-                        'y': y
-                    })
-            
-            # If we have image signatures, create overlay and merge
-            if image_signatures:
-                doc.save("temp_before_signatures.pdf")
-                doc.close()
-                
-                # Create signature overlays and merge
-                final_pdf_path = self.create_signature_overlays("temp_before_signatures.pdf", image_signatures)
-                
-                # Reopen the merged PDF
-                if final_pdf_path and os.path.exists(final_pdf_path):
-                    # Replace the original document with the merged one
-                    import shutil
-                    shutil.move(final_pdf_path, "temp_before_signatures.pdf")
-                    doc = fitz.open("temp_before_signatures.pdf")
-                    return doc
+                    # Insert the signature image
+                    self.insert_signature_image(page, field['image_data'], x, y, field_name)
                     
         except Exception as e:
             print(f"⚠️  Error adding image signature overlays: {e}")
-            
-        return doc
-    
-    def create_signature_overlays(self, original_pdf_path: str, image_signatures: List[Dict[str, Any]]) -> str:
-        """Create signature overlays using ReportLab and merge with PyPDF2"""
-        try:
-            print(f"🖼️  Creating signature overlays for {len(image_signatures)} signatures")
-            
-            # Read the original PDF
-            original_reader = PdfReader(original_pdf_path)
-            writer = PdfWriter()
-            
-            # Process each page
-            for page_num, page in enumerate(original_reader.pages):
-                # Check if this page has any signatures
-                page_signatures = [sig for sig in image_signatures if sig['page_num'] == page_num]
-                
-                if page_signatures:
-                    print(f"📄 Page {page_num}: Adding {len(page_signatures)} signature(s)")
-                    
-                    # Create overlay PDF for this page using ReportLab
-                    overlay_path = f"temp_signature_overlay_page_{page_num}.pdf"
-                    self.create_page_signature_overlay(overlay_path, page_signatures)
-                    
-                    # Merge the overlay with the original page
-                    if os.path.exists(overlay_path):
-                        overlay_reader = PdfReader(overlay_path)
-                        overlay_page = overlay_reader.pages[0]
-                        page.merge_page(overlay_page)
-                        
-                        # Clean up overlay file
-                        os.remove(overlay_path)
-                
-                writer.add_page(page)
-            
-            # Save the final merged PDF
-            output_path = "temp_with_signatures.pdf"
-            with open(output_path, "wb") as output_file:
-                writer.write(output_file)
-            
-            print(f"✅ Created merged PDF with signatures: {output_path}")
-            return output_path
-            
-        except Exception as e:
-            print(f"⚠️  Error creating signature overlays: {e}")
-            return None
-    
-    def create_page_signature_overlay(self, output_path: str, signatures: List[Dict[str, Any]]):
-        """Create a transparent overlay PDF with signatures using ReportLab"""
-        try:
-            c = canvas.Canvas(output_path, pagesize=letter)
-            
-            for sig in signatures:
-                print(f"🎨 Drawing signature: {sig['field_name']} at ({sig['x']}, {sig['y']})")
-                
-                # Decode base64 image data
-                image_data = sig['image_data']
-                if image_data.startswith('data:image/'):
-                    # Remove data:image/png;base64, prefix
-                    signature_base64 = image_data.split(",")[1]
-                    signature_bytes = base64.b64decode(signature_base64)
-                    signature_image = Image.open(BytesIO(signature_bytes))
-                    
-                    # Convert to RGBA if needed
-                    if signature_image.mode != 'RGBA':
-                        signature_image = signature_image.convert('RGBA')
-                    
-                    # Resize signature to reasonable size
-                    max_width, max_height = 150, 50
-                    signature_image.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
-                    
-                    # Create ImageReader for ReportLab
-                    img_reader = ImageReader(signature_image)
-                    
-                    # Draw the image on the canvas
-                    c.drawImage(
-                        img_reader, 
-                        x=sig['x'], 
-                        y=sig['y'], 
-                        width=signature_image.width, 
-                        height=signature_image.height,
-                        mask='auto'  # Handle transparency
-                    )
-                    
-                    print(f"✅ Drew signature image {signature_image.width}x{signature_image.height}")
-            
-            c.save()
-            print(f"💾 Saved overlay PDF: {output_path}")
-            
-        except Exception as e:
-            print(f"⚠️  Error creating page signature overlay: {e}")
     
     def add_dwelling_visual_indicators(self, doc, document: Dict[str, Any]):
         """Add visual indicators for dwelling type selection to make it obvious"""
