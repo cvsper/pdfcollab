@@ -2,6 +2,13 @@
 
 {% block title %}User 2 - Complete & Sign - PDF Collaborator{% endblock %}
 
+{% block head %}
+<!-- Google Fonts for signature styling -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Pacifico&display=swap" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <!-- User 2 Interface - Matching React UserTwoInterface component -->
 <div class="space-y-8">
@@ -108,7 +115,7 @@
                                     <input type="text" id="typed-signature" placeholder="Type your signature"
                                            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                                     <div class="mt-2 p-3 border border-gray-200 rounded-md bg-white min-h-[80px] flex items-center justify-center">
-                                        <span class="font-signature text-xl" id="signature-preview"></span>
+                                        <span class="font-signature text-xl" id="signature-preview" style="font-family: 'Brush Script MT', 'Lucida Handwriting', 'Lucida Calligraphy', cursive !important; font-size: 28px !important; color: #1a202c !important;"></span>
                                     </div>
                                 </div>
                                 
@@ -431,9 +438,23 @@ document.getElementById('user2Form').addEventListener('submit', function(e) {
 <style>
 /* Signature font style */
 .font-signature {
-    font-family: 'Brush Script MT', 'Lucida Handwriting', 'Lucida Calligraphy', cursive;
-    font-size: 28px;
-    color: #1a202c;
+    font-family: 'Brush Script MT', 'Lucida Handwriting', 'Lucida Calligraphy', 'Dancing Script', 'Pacifico', 'Great Vibes', cursive !important;
+    font-size: 28px !important;
+    color: #1a202c !important;
+    font-weight: normal !important;
+    font-style: italic !important;
+    text-decoration: none !important;
+}
+
+/* Additional signature styling to ensure it shows */
+#signature-preview {
+    font-family: 'Brush Script MT', 'Lucida Handwriting', 'Lucida Calligraphy', 'Dancing Script', 'Pacifico', 'Great Vibes', cursive !important;
+    font-size: 28px !important;
+    color: #1a202c !important;
+    font-weight: normal !important;
+    font-style: italic !important;
+    text-decoration: none !important;
+    display: inline-block !important;
 }
 </style>
 {% endblock %}
