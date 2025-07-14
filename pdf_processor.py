@@ -700,11 +700,11 @@ class PDFProcessor:
                             signature_value = user2_data['applicant_signature']
                             # Check if it's base64 image data
                             if signature_value.startswith('data:image/'):
-                                # For base64 images, show placeholder text instead
-                                field['value'] = "[Digital Signature Applied]"
+                                # For base64 images, keep the data but mark as image signature
+                                field['value'] = signature_value  # Keep original for processing
                                 field['is_image_signature'] = True
                                 field['image_data'] = signature_value
-                                print(f"🖋️  Mapped Applicant signature (image): '{field['name']}' -> '[Digital Signature Applied]'")
+                                print(f"🖋️  Mapped Applicant signature (image): '{field['name']}' -> [Image Data]")
                             else:
                                 # For typed signatures, use the text directly
                                 field['value'] = signature_value
@@ -716,11 +716,11 @@ class PDFProcessor:
                             signature_value = user2_data['owner_signature']
                             # Check if it's base64 image data
                             if signature_value.startswith('data:image/'):
-                                # For base64 images, show placeholder text instead
-                                field['value'] = "[Digital Signature Applied]"
+                                # For base64 images, keep the data but mark as image signature
+                                field['value'] = signature_value  # Keep original for processing
                                 field['is_image_signature'] = True
                                 field['image_data'] = signature_value
-                                print(f"🖋️  Mapped Property Owner signature (image): '{field['name']}' -> '[Digital Signature Applied]'")
+                                print(f"🖋️  Mapped Property Owner signature (image): '{field['name']}' -> [Image Data]")
                             else:
                                 # For typed signatures, use the text directly
                                 field['value'] = signature_value
@@ -964,6 +964,50 @@ class PDFProcessor:
                 
         except Exception as e:
             print(f"⚠️  Error inserting signature text: {e}")
+    
+    def insert_signature_image(self, page, image_data: str, x: float, y: float, field_name: str):
+        """Insert a base64 signature image into the PDF"""
+        try:
+            if not image_data or not image_data.startswith('data:image/'):
+                print(f"⚠️  Invalid image data for signature '{field_name}'")
+                return
+            
+            # Extract base64 data (remove data:image/png;base64, prefix)
+            header, encoded = image_data.split(',', 1)
+            image_bytes = base64.b64decode(encoded)
+            
+            # Convert to PIL Image
+            pil_image = Image.open(BytesIO(image_bytes))
+            
+            # Convert to RGBA if needed and ensure proper format
+            if pil_image.mode != 'RGBA':
+                pil_image = pil_image.convert('RGBA')
+            
+            # Resize signature to reasonable size (max 150x50 pixels)
+            max_width, max_height = 150, 50
+            pil_image.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            
+            # Convert back to bytes
+            img_buffer = BytesIO()
+            pil_image.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+            
+            # Insert image into PDF
+            img_rect = fitz.Rect(x, y - pil_image.height, x + pil_image.width, y)
+            page.insert_image(img_rect, stream=img_buffer.getvalue())
+            
+            print(f"✍️  Inserted signature image for '{field_name}' at ({x}, {y})")
+            
+        except Exception as e:
+            print(f"⚠️  Error inserting signature image for '{field_name}': {e}")
+            # Fallback to text
+            page.insert_text(
+                (x, y),
+                "[Signature Applied]",
+                fontsize=12,
+                color=(0, 0, 0.7),
+                fontname="times-italic"
+            )
     
     def add_dwelling_visual_indicators(self, doc, document: Dict[str, Any]):
         """Add visual indicators for dwelling type selection to make it obvious"""
@@ -1428,12 +1472,7 @@ class PDFProcessor:
                     signature_text = field['value']
                     field_name = field.get('name', '')
                     
-                    # Skip image signatures in overlay - they're already handled as text placeholders
-                    if field.get('is_image_signature', False):
-                        print(f"🖼️  Skipping image signature overlay for '{field_name}' - using placeholder text")
-                        # The placeholder text "[Digital Signature Applied]" will be used
-                    
-                    # Use the same exact coordinates as the main processor
+                    # Calculate coordinates first
                     if field_name in ['Applicant Signature', 'signature3']:
                         signature_x = 66
                         signature_y = 152
@@ -1447,6 +1486,12 @@ class PDFProcessor:
                         # Fallback positioning for other signature fields
                         signature_x = position.get('x', 0)
                         signature_y = position.get('y', 0) + 12
+                    
+                    # Handle image signatures by inserting the actual image
+                    if field.get('is_image_signature', False):
+                        print(f"🖼️  Processing image signature for '{field_name}'")
+                        self.insert_signature_image(page, field.get('image_data'), signature_x, signature_y, field_name)
+                        continue
                     
                     # Insert signature with proper orientation and cursive font
                     try:
