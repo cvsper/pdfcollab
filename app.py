@@ -1232,9 +1232,9 @@ def fill_pdf_fields(pdf_path, field_data, output_path):
     """Legacy PDF field filling function"""
     return fill_pdf_fields_advanced(pdf_path, {'pdf_fields': [], 'user1_data': field_data, 'user2_data': {}}, output_path)
 
-@app.route('/health')
-def health_check():
-    """Health check endpoint with deployment version info"""
+@app.route('/deployment-status')
+def deployment_status():
+    """Deployment status endpoint with version info"""
     return jsonify({
         'status': 'healthy',
         'version': '2024-12-15-fix-upload',
@@ -1243,7 +1243,8 @@ def health_check():
             'signature_styling': True,
             'upload_fix': True
         },
-        'last_update': 'Fixed supporting document upload requiring 3 attempts'
+        'last_update': 'Fixed supporting document upload requiring 3 attempts',
+        'commit': 'e485845'
     })
 
 @app.route('/')
