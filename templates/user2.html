@@ -384,6 +384,56 @@ document.getElementById('user2Form').addEventListener('submit', function(e) {
         alert('Please add your signature before submitting.');
         return false;
     }
+    
+    // Add supporting files to the form data
+    if (supportingFiles.length > 0) {
+        // Create a new FormData object to handle file uploads
+        const formData = new FormData(this);
+        
+        // Remove any existing supporting_docs entries
+        formData.delete('supporting_docs');
+        
+        // Add all supporting files to the form data
+        supportingFiles.forEach(file => {
+            formData.append('supporting_docs', file);
+        });
+        
+        // We need to submit the form via AJAX to properly handle the files
+        e.preventDefault();
+        
+        // Submit the form via fetch
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                return response.text();
+            }
+        })
+        .then(html => {
+            if (html) {
+                document.open();
+                document.write(html);
+                document.close();
+            }
+        })
+        .catch(error => {
+            console.error('Error submitting form:', error);
+            alert('Error submitting form. Please try again.');
+        });
+    }
 });
 </script>
+
+<style>
+/* Signature font style */
+.font-signature {
+    font-family: 'Brush Script MT', 'Lucida Handwriting', 'Lucida Calligraphy', cursive;
+    font-size: 28px;
+    color: #1a202c;
+}
+</style>
 {% endblock %}
