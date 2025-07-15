@@ -700,8 +700,8 @@ class PDFProcessor:
                             signature_value = user2_data['applicant_signature']
                             # Check if it's base64 image data
                             if signature_value.startswith('data:image/'):
-                                # For base64 images, show clean placeholder text instead
-                                field['value'] = "✍ Digital Signature"
+                                # For base64 images, don't set any text value
+                                field['value'] = ""  # No text value for image signatures
                                 field['is_image_signature'] = True
                                 field['image_data'] = signature_value
                                 print(f"🖋️  Mapped Applicant signature (image): '{field['name']}' -> [Digital Signature]")
@@ -716,8 +716,8 @@ class PDFProcessor:
                             signature_value = user2_data['owner_signature']
                             # Check if it's base64 image data
                             if signature_value.startswith('data:image/'):
-                                # For base64 images, show clean placeholder text instead
-                                field['value'] = "✍ Digital Signature"
+                                # For base64 images, don't set any text value
+                                field['value'] = ""  # No text value for image signatures
                                 field['is_image_signature'] = True
                                 field['image_data'] = signature_value
                                 print(f"🖋️  Mapped Property Owner signature (image): '{field['name']}' -> [Digital Signature]")
@@ -873,9 +873,15 @@ class PDFProcessor:
                             # Skip image signatures - they'll be handled in overlay step
                             if signature_fields[field_name].get('is_image_signature', False):
                                 print(f"🖼️  Skipping image signature form field: {field_name}")
-                                # Clear the form field so no text appears
-                                widget.field_value = " "  # Use space instead of empty to ensure field is cleared
-                                widget.update()
+                                # Completely clear the form field so no text appears
+                                try:
+                                    widget.field_value = ""  # Clear the field completely
+                                    widget.update()
+                                    # Also try alternative clearing methods
+                                    widget.field_display = fitz.PDF_WIDGET_DISPLAY_HIDDEN
+                                    widget.update()
+                                except:
+                                    pass
                                 # Store widget info for image overlay
                                 signature_fields[field_name]['widget_rect'] = widget.rect
                                 signature_fields[field_name]['page_num'] = page_num
