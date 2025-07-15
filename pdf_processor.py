@@ -759,7 +759,10 @@ class PDFProcessor:
             # Step 6: Add visual indicators for Options A, B, D
             self.add_qualification_visual_indicators(doc, document)
             
-            # Step 6: Save PDF directly (skip image conversion to preserve signature quality)
+            # Step 7: Add signature images if any
+            self.add_signature_images(doc, document)
+            
+            # Step 8: Save PDF directly (skip image conversion to preserve signature quality)
             print("🔧 Saving PDF with signatures preserved...")
             doc.save(output_path)
             doc.close()
@@ -870,6 +873,12 @@ class PDFProcessor:
                             # Skip image signatures - they'll be handled in overlay step
                             if signature_fields[field_name].get('is_image_signature', False):
                                 print(f"🖼️  Skipping image signature form field: {field_name}")
+                                # Clear the form field so no text appears
+                                widget.field_value = " "  # Use space instead of empty to ensure field is cleared
+                                widget.update()
+                                # Store widget info for image overlay
+                                signature_fields[field_name]['widget_rect'] = widget.rect
+                                signature_fields[field_name]['page_num'] = page_num
                                 continue
                             
                             try:
@@ -999,12 +1008,98 @@ class PDFProcessor:
         except Exception as e:
             print(f"⚠️  Error inserting signature text: {e}")
     
-    def insert_signature_image(self, page, image_data: str, x: float, y: float, field_name: str):
+    def add_signature_images(self, doc, document: Dict[str, Any]) -> bool:
+        """Add signature images to the PDF for drawn signatures"""
+        try:
+            print("🖼️  Checking for signature images to overlay...")
+            
+            # Get PDF fields from document
+            pdf_fields = document.get('pdf_fields', [])
+            if not pdf_fields:
+                print("   ⚠️  No PDF fields found")
+                return False
+            
+            # Find signature fields with image data
+            signature_count = 0
+            for field in pdf_fields:
+                if field.get('is_image_signature') and field.get('image_data'):
+                    field_name = field.get('pdf_field_name', field.get('name', ''))
+                    image_data = field.get('image_data')
+                    
+                    print(f"   🖋️  Processing signature image for '{field_name}'")
+                    
+                    # Use stored widget info if available
+                    if 'widget_rect' in field and 'page_num' in field:
+                        page_num = field['page_num']
+                        rect = field['widget_rect']
+                        page = doc[page_num]
+                        
+                        # Insert the signature image at the widget position
+                        success = self.insert_signature_image(
+                            page, 
+                            image_data, 
+                            rect.x0, 
+                            rect.y0,
+                            rect.width,
+                            rect.height,
+                            field_name
+                        )
+                        
+                        if success:
+                            signature_count += 1
+                            print(f"   ✅ Added signature image for '{field_name}'")
+                        else:
+                            print(f"   ❌ Failed to add signature image for '{field_name}'")
+                    else:
+                        # Fallback: Find the widget position on the correct page
+                        for page_num in range(len(doc)):
+                            page = doc[page_num]
+                            for widget in page.widgets():
+                                if widget.field_name == field_name:
+                                    # Get widget position
+                                    rect = widget.rect
+                                    
+                                    # Insert the signature image at the widget position
+                                    success = self.insert_signature_image(
+                                        page, 
+                                        image_data, 
+                                        rect.x0, 
+                                        rect.y0,
+                                        rect.width,
+                                        rect.height,
+                                        field_name
+                                    )
+                                    
+                                    if success:
+                                        signature_count += 1
+                                        print(f"   ✅ Added signature image for '{field_name}'")
+                                    else:
+                                        print(f"   ❌ Failed to add signature image for '{field_name}'")
+                                    
+                                    break
+                            else:
+                                continue
+                            break
+            
+            if signature_count > 0:
+                print(f"✅ Added {signature_count} signature image(s) to PDF")
+            else:
+                print("   ℹ️  No signature images to add")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error adding signature images: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def insert_signature_image(self, page, image_data: str, x: float, y: float, width: float, height: float, field_name: str) -> bool:
         """Insert a base64 signature image into the PDF"""
         try:
             if not image_data or not image_data.startswith('data:image/'):
                 print(f"⚠️  Invalid image data for signature '{field_name}'")
-                return
+                return False
             
             # Extract base64 data (remove data:image/png;base64, prefix)
             header, encoded = image_data.split(',', 1)
@@ -1013,35 +1108,66 @@ class PDFProcessor:
             # Convert to PIL Image
             pil_image = Image.open(BytesIO(image_bytes))
             
-            # Convert to RGBA if needed and ensure proper format
-            if pil_image.mode != 'RGBA':
-                pil_image = pil_image.convert('RGBA')
+            # Keep original transparency for natural signature display
+            # No background processing needed - signature will blend with PDF
             
-            # Resize signature to reasonable size (max 150x50 pixels)
-            max_width, max_height = 150, 50
-            pil_image.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            # Calculate scale to fit within the field dimensions
+            # For narrow signature fields, ignore height constraint and focus on width
+            if height < 20:  # Very narrow field like signature fields
+                scale = width / pil_image.width
+                # Make signature smaller - reduce scale by 50%
+                scale = scale * 0.5
+                # Ensure signature is visible - use minimum height of 15px
+                min_height = 15
+                if scale * pil_image.height < min_height:
+                    scale = min_height / pil_image.height
+            else:
+                scale = min(width / pil_image.width, height / pil_image.height)
             
-            # Convert back to bytes
+            # Don't scale up more than 2x for signatures (reduced from 3x)
+            scale = min(scale, 2.0)
+            
+            new_width = int(pil_image.width * scale)
+            new_height = int(pil_image.height * scale)
+            
+            # Resize signature to fit the field
+            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Convert back to bytes as PNG to preserve transparency
             img_buffer = BytesIO()
             pil_image.save(img_buffer, format='PNG')
             img_buffer.seek(0)
             
+            # Position image for maximum visibility
+            # For narrow fields, place at the field position with adjustment
+            img_x = x + 12  # Move signature a little to the right
+            
+            if height < 20:  # Very narrow field - place image at field level
+                # User wants signature "a little lower", so adjust Y (PDF coordinates)
+                img_y = y - 340  # Move signature a little lower from previous position
+            else:
+                img_y = y + (height - new_height) / 2  # Normal centering
+            
+            # Debug output
+            print(f"   📐 Field bounds: x={x:.1f}, y={y:.1f}, w={width:.1f}, h={height:.1f}")
+            print(f"   📐 Image size: {new_width}x{new_height}, scale={scale:.2f}")
+            print(f"   📐 Image position: x={img_x:.1f}, y={img_y:.1f}")
+            print(f"   📐 Field name: {field_name}")
+            print(f"   📐 Height check: {height} < 20 = {height < 20}")
+            print(f"   📐 Y calculation: {y} + 150 = {y + 150}")
+            
             # Insert image into PDF
-            img_rect = fitz.Rect(x, y - pil_image.height, x + pil_image.width, y)
+            img_rect = fitz.Rect(img_x, img_y, img_x + new_width, img_y + new_height)
             page.insert_image(img_rect, stream=img_buffer.getvalue())
             
-            print(f"✍️  Inserted signature image for '{field_name}' at ({x}, {y})")
+            print(f"   ✅ Inserted signature image for '{field_name}'")
+            return True
             
         except Exception as e:
             print(f"⚠️  Error inserting signature image for '{field_name}': {e}")
-            # Fallback to text
-            page.insert_text(
-                (x, y),
-                "[Signature Applied]",
-                fontsize=12,
-                color=(0, 0, 0.7),
-                fontname="times-italic"
-            )
+            import traceback
+            traceback.print_exc()
+            return False
     
     def add_dwelling_visual_indicators(self, doc, document: Dict[str, Any]):
         """Add visual indicators for dwelling type selection to make it obvious"""
